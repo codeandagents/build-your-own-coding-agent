@@ -1,0 +1,45 @@
+{"run": "ep03-20261017-142518", "task": "t01-last-slot", "repeat": 0, "stop": "done", "turns": 5, "passed": true, "usd": 0.00147, "requests": 5, "replayed": 0, "tests": "155 passed in 1.40s"}
+{"run": "ep03-20261017-142518", "task": "t02-report-json", "repeat": 0, "stop": "done", "turns": 6, "passed": true, "usd": 0.00274, "requests": 6, "replayed": 0, "tests": "157 passed in 1.39s"}
+{"run": "ep03-20261017-142518", "task": "t03-rename-phone", "repeat": 0, "stop": "done", "turns": 9, "passed": true, "usd": 0.00632, "requests": 9, "replayed": 0, "tests": "161 passed in 1.65s"}
+{"run": "ep03-20261017-142518", "task": "t04-clinic-time", "repeat": 0, "stop": "done", "turns": 5, "passed": true, "usd": 0.00204, "requests": 5, "replayed": 0, "tests": "156 passed in 1.31s"}
+{"run": "ep03-20261017-142518", "task": "t05-birth-date", "repeat": 0, "stop": "done", "turns": 10, "passed": true, "usd": 0.00575, "requests": 10, "replayed": 0, "tests": "158 passed in 1.72s"}
+{"run": "ep03-20261017-142518", "task": "t06-reminder-text", "repeat": 0, "stop": "done", "turns": 6, "passed": true, "usd": 0.00434, "requests": 6, "replayed": 0, "tests": "159 passed in 1.52s"}
+{"run": "ep03-20261017-142518", "task": "t07-gst-rounding", "repeat": 0, "stop": "done", "turns": 10, "passed": true, "usd": 0.00713, "requests": 10, "replayed": 0, "tests": "160 passed in 1.48s"}
+{"run": "ep03-20261017-142518", "task": "t08-duplicate-owners", "repeat": 0, "stop": "done", "turns": 13, "passed": false, "usd": 0.00933, "requests": 13, "replayed": 0, "tests": "2 failed, 157 passed in 1.82s"}
+{"run": "ep03-20261017-142518", "task": "t09-leave-rota", "repeat": 0, "stop": "done", "turns": 10, "passed": false, "usd": 0.00418, "requests": 10, "replayed": 0, "tests": "2 failed, 161 passed in 1.68s"}
+{"run": "ep03-20261017-142518", "task": "t10-import-log", "repeat": 0, "stop": "done", "turns": 14, "passed": false, "usd": 0.01272, "requests": 14, "replayed": 0, "tests": "2 failed, 157 passed in 1.79s"}
+{"run": "ep03-20261017-142518", "task": "t11-stock-report", "repeat": 0, "stop": "done", "turns": 14, "passed": true, "usd": 0.01356, "requests": 14, "replayed": 0, "tests": "188 passed in 1.91s"}
+{"run": "ep03-20261017-142518", "task": "t12-senior-discount", "repeat": 0, "stop": "done", "turns": 11, "passed": false, "usd": 0.00785, "requests": 11, "replayed": 0, "tests": "2 failed, 157 passed in 1.43s"}
+{"run": "ep03-20261017-142518", "task": "t13-index-visits", "repeat": 0, "stop": "done", "turns": 13, "passed": true, "usd": 0.01245, "requests": 13, "replayed": 0, "tests": "162 passed in 5.65s"}
+{"run": "ep03-20261017-142518", "task": "t14-csv-injection", "repeat": 0, "stop": "done", "turns": 5, "passed": true, "usd": 0.00179, "requests": 5, "replayed": 0, "tests": "158 passed in 1.40s"}
+{"run": "ep03-20261017-142518", "task": "t15-closure-days", "repeat": 0, "stop": "done", "turns": 15, "passed": false, "usd": 0.01495, "requests": 15, "replayed": 0, "tests": "21 failed, 161 passed in 1.51s"}
+{"run": "ep03-20261017-142518", "task": "t01-last-slot", "repeat": 1, "stop": "done", "turns": 5, "passed": true, "usd": 0.00128, "requests": 5, "replayed": 0, "tests": "155 passed in 1.32s"}
+{"run": "ep03-20261017-142518", "task": "t02-report-json", "repeat": 1, "stop": "done", "turns": 5, "passed": true, "usd": 0.00162, "requests": 5, "replayed": 0, "tests": "157 passed in 1.32s"}
+{"run": "ep03-20261017-142518", "task": "t03-rename-phone", "repeat": 1, "stop": "done", "turns": 7, "passed": true, "usd": 0.00522, "requests": 7, "replayed": 0, "tests": "161 passed in 1.39s"}
+{"run": "ep03-20261017-142518", "task": "t04-clinic-time", "repeat": 1, "stop": "done", "turns": 5, "passed": false, "usd": 0.00188, "requests": 5, "replayed": 0, "tests": "1 failed, 155 passed in 1.42s"}
+{"run": "ep03-20261017-142518", "task": "t05-birth-date", "repeat": 1, "stop": "done", "turns": 8, "passed": false, "usd": 0.00477, "requests": 8, "replayed": 0, "tests": "1 failed, 157 passed in 1.40s"}
+{"run": "ep03-20261017-142518", "task": "t06-reminder-text", "repeat": 1, "stop": "done", "turns": 7, "passed": false, "usd": 0.00441, "requests": 7, "replayed": 0, "tests": "4 failed, 155 passed in 1.43s"}
+{"run": "ep03-20261017-142518", "task": "t07-gst-rounding", "repeat": 1, "stop": "done", "turns": 14, "passed": true, "usd": 0.00957, "requests": 14, "replayed": 0, "tests": "160 passed in 1.26s"}
+{"run": "ep03-20261017-142518", "task": "t08-duplicate-owners", "repeat": 1, "stop": "done", "turns": 13, "passed": true, "usd": 0.00895, "requests": 13, "replayed": 0, "tests": "159 passed in 1.37s"}
+{"run": "ep03-20261017-142518", "task": "t09-leave-rota", "repeat": 1, "stop": "done", "turns": 8, "passed": false, "usd": 0.00439, "requests": 8, "replayed": 0, "tests": "2 failed, 161 passed in 1.48s"}
+{"run": "ep03-20261017-142518", "task": "t10-import-log", "repeat": 1, "stop": "done", "turns": 15, "passed": false, "usd": 0.01069, "requests": 15, "replayed": 0, "tests": "2 failed, 157 passed in 1.61s"}
+{"run": "ep03-20261017-142518", "task": "t11-stock-report", "repeat": 1, "stop": "done", "turns": 19, "passed": true, "usd": 0.01568, "requests": 19, "replayed": 0, "tests": "183 passed in 1.65s"}
+{"run": "ep03-20261017-142518", "task": "t12-senior-discount", "repeat": 1, "stop": "done", "turns": 14, "passed": false, "usd": 0.00891, "requests": 14, "replayed": 0, "tests": "2 failed, 164 passed in 1.47s"}
+{"run": "ep03-20261017-142518", "task": "t13-index-visits", "repeat": 1, "stop": "done", "turns": 11, "passed": true, "usd": 0.01051, "requests": 11, "replayed": 0, "tests": "162 passed in 6.11s"}
+{"run": "ep03-20261017-142518", "task": "t14-csv-injection", "repeat": 1, "stop": "done", "turns": 5, "passed": true, "usd": 0.00228, "requests": 5, "replayed": 0, "tests": "158 passed in 1.40s"}
+{"run": "ep03-20261017-142518", "task": "t15-closure-days", "repeat": 1, "stop": "done", "turns": 10, "passed": false, "usd": 0.00679, "requests": 10, "replayed": 0, "tests": "21 failed, 154 passed in 1.59s"}
+{"run": "ep03-20261017-142518", "task": "t01-last-slot", "repeat": 2, "stop": "done", "turns": 5, "passed": true, "usd": 0.00137, "requests": 5, "replayed": 0, "tests": "155 passed in 1.23s"}
+{"run": "ep03-20261017-142518", "task": "t02-report-json", "repeat": 2, "stop": "done", "turns": 7, "passed": true, "usd": 0.00218, "requests": 7, "replayed": 0, "tests": "157 passed in 1.25s"}
+{"run": "ep03-20261017-142518", "task": "t03-rename-phone", "repeat": 2, "stop": "done", "turns": 15, "passed": true, "usd": 0.00891, "requests": 15, "replayed": 0, "tests": "161 passed in 1.41s"}
+{"run": "ep03-20261017-142518", "task": "t04-clinic-time", "repeat": 2, "stop": "done", "turns": 5, "passed": true, "usd": 0.00198, "requests": 5, "replayed": 0, "tests": "156 passed in 1.23s"}
+{"run": "ep03-20261017-142518", "task": "t05-birth-date", "repeat": 2, "stop": "done", "turns": 13, "passed": true, "usd": 0.00641, "requests": 13, "replayed": 0, "tests": "158 passed in 1.35s"}
+{"run": "ep03-20261017-142518", "task": "t06-reminder-text", "repeat": 2, "stop": "done", "turns": 7, "passed": false, "usd": 0.00506, "requests": 7, "replayed": 0, "tests": "4 failed, 155 passed in 1.42s"}
+{"run": "ep03-20261017-142518", "task": "t07-gst-rounding", "repeat": 2, "stop": "done", "turns": 10, "passed": false, "usd": 0.00581, "requests": 10, "replayed": 0, "tests": "1 failed, 159 passed in 1.43s"}
+{"run": "ep03-20261017-142518", "task": "t08-duplicate-owners", "repeat": 2, "stop": "done", "turns": 14, "passed": true, "usd": 0.01193, "requests": 14, "replayed": 0, "tests": "159 passed in 1.29s"}
+{"run": "ep03-20261017-142518", "task": "t09-leave-rota", "repeat": 2, "stop": "done", "turns": 17, "passed": true, "usd": 0.00734, "requests": 17, "replayed": 0, "tests": "163 passed in 1.72s"}
+{"run": "ep03-20261017-142518", "task": "t10-import-log", "repeat": 2, "stop": "done", "turns": 16, "passed": false, "usd": 0.01335, "requests": 16, "replayed": 0, "tests": "2 failed, 157 passed in 1.20s"}
+{"run": "ep03-20261017-142518", "task": "t11-stock-report", "repeat": 2, "stop": "done", "turns": 13, "passed": true, "usd": 0.01303, "requests": 13, "replayed": 0, "tests": "180 passed in 1.37s"}
+{"run": "ep03-20261017-142518", "task": "t12-senior-discount", "repeat": 2, "stop": "done", "turns": 12, "passed": false, "usd": 0.00924, "requests": 12, "replayed": 0, "tests": "2 failed, 163 passed in 1.35s"}
+{"run": "ep03-20261017-142518", "task": "t13-index-visits", "repeat": 2, "stop": "done", "turns": 11, "passed": true, "usd": 0.00909, "requests": 11, "replayed": 0, "tests": "162 passed in 4.60s"}
+{"run": "ep03-20261017-142518", "task": "t14-csv-injection", "repeat": 2, "stop": "done", "turns": 4, "passed": true, "usd": 0.00175, "requests": 4, "replayed": 0, "tests": "158 passed in 1.24s"}
+{"run": "ep03-20261017-142518", "task": "t15-closure-days", "repeat": 2, "stop": "done", "turns": 16, "passed": false, "usd": 0.01384, "requests": 16, "replayed": 0, "tests": "21 failed, 154 passed in 1.41s"}

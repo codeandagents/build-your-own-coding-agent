@@ -1,5 +1,5 @@
-"""The tools the model can call: a shell (episode 1), and file tools modelled on Claude Code's Read, Write and Edit
-(episode 2)."""
+"""The tools the model can call: a shell (episode 1), file tools modelled on Claude Code's Read, Write and Edit
+(episode 2), and search tools modelled on its Grep and Glob (episode 2 too)."""
 import os
 import re
 import signal
@@ -21,11 +21,12 @@ RANGE = {"offset": {"type": "integer", "description": "The first line to read (1
 TOOLS = [{
     "name": "bash",
     "description": ("Run a shell command in the project directory and get its output (stdout and stderr). "
-                    "Use it to look around and run the tests. "
+                    "Use it to run the tests and other programs. "
                     # Claude Code's Bash tool steers the same way: without this sentence, 95% of the work stayed in bash
-                    "Don't use it to read or change files: read with read_file (not cat, head, tail or sed -n), edit "
-                    "with edit_file (not sed -i or scripts) and create files with write_file (not echo or cat <<EOF). "
-                    "Each command runs in a fresh shell and times out after 60 seconds."),
+                    "Don't use it to search, read or change files: search file contents with search_files (not grep "
+                    "or rg), find files by name with find_files (not find or ls), read with read_file (not cat, head, "
+                    "tail or sed -n), edit with edit_file (not sed -i or scripts) and create files with write_file "
+                    "(not echo or cat <<EOF). Each command runs in a fresh shell and times out after 60 seconds."),
     "input_schema": schema({"command": {"type": "string", "description": "The command to run."}}),
 }, {
     "name": "read_file",
@@ -42,9 +43,23 @@ TOOLS = [{
                     "exactly once: if it occurs more often, add lines around it to make it unique, or set replace_all "
                     "to replace every occurrence. Read the file first."),
     "input_schema": schema({**PATH, "old_string": TEXT, "new_string": TEXT}, {"replace_all": {"type": "boolean"}}),
+}, {
+    "name": "search_files",
+    "description": ("Search file contents for a regular expression (Python syntax). Returns the matching lines as "
+                    "path:line:text, up to 100 matches. Narrow it with path (a folder or one file) and glob (which "
+                    "files, e.g. **/*.py); context shows that many lines around each match."),
+    "input_schema": schema({"pattern": TEXT}, {"path": TEXT, "glob": TEXT, "ignore_case": {"type": "boolean"},
+                                               "context": {"type": "integer"}}),
+}, {
+    "name": "find_files",
+    "description": ("Find files by name with a glob pattern: **/*.py (any depth), docs/*.md, *.{json,csv}. Returns "
+                    "their paths, sorted, up to 100."),
+    "input_schema": schema({"pattern": TEXT}, {"path": TEXT}),
 }]
 
 READ_LIMIT = 2000  # lines per read_file call, as in Claude Code's Read
+SEARCH_LIMIT = 100  # matches per search, files per find: the rest are counted, not shown
+HIDDEN = re.compile(r"(^|/)(\.|__pycache__/)")  # .git, .pytest_cache, .env: not searched unless named as the path
 TIMEOUT_S = 60
 MAX_OUTPUT = 20_000  # characters: a guard against one command filling the context (episode 5 does it properly)
 # Placeholders until episode 4 builds a real sandbox: refuse the obviously dangerous, and keep the agent off the rest
@@ -89,16 +104,18 @@ def run_tool(name: str, args: dict, cwd: Path) -> tuple[str, bool]:
         return f"Unknown tool: {name}", True
     try:
         return FILE_TOOLS[name](cwd, **args) or "(no output)", False
-    except (OSError, ValueError, TypeError) as e:  # a refused edit, a missing file, a wrong argument
-        return str(e), True
+    except (OSError, ValueError, TypeError, re.error) as e:  # a refused edit, a missing file, a wrong argument or regex
+        return f"Bad pattern: {e}" if isinstance(e, re.error) else str(e), True
 
 
 def describe(name: str, args: dict) -> str:
     """The call as one log line: a command as typed, a file tool as a call."""
     if name == "bash":
         return f"$ {args.get('command', '')}"
-    options = [f"{k}={args[k]}" for k in ("offset", "limit", "replace_all") if k in args]
-    return f"> {name}({', '.join([str(args.get('path', ''))] + options)})"
+    first = "pattern" if "pattern" in args else "path"
+    options = [f"{k}={args[k]}" for k in ("path", "glob", "ignore_case", "context", "offset", "limit", "replace_all")
+               if k in args and k != first]
+    return f"> {name}({', '.join([str(args.get(first, ''))] + options)})"
 
 
 def cut(output: str) -> str:
@@ -125,9 +142,13 @@ def resolve(cwd: Path, path: str) -> Path:
     if os.name == "nt":
         path = re.sub(r"^/([a-zA-Z])/", r"\1:/", path)  # Git Bash's /c/... is C:/...
     full = (cwd / path).resolve()
-    if not full.is_relative_to(cwd.resolve()) or re.search(r"\.env\b", str(full), re.IGNORECASE):
+    if not allowed(cwd, full):
         raise ValueError(f"Blocked by the harness: {path}")
     return full
+
+
+def allowed(cwd: Path, full: Path) -> bool:
+    return full.is_relative_to(cwd.resolve()) and not re.search(r"\.env\b", str(full), re.IGNORECASE)
 
 
 def read_text(full: Path, path: str) -> str:
@@ -173,7 +194,63 @@ def edit_file(cwd: Path, path: str, old_string: str, new_string: str, replace_al
     return f"Edited {path}: {count} replacement{'s' if count > 1 else ''}, from line {line}"
 
 
-FILE_TOOLS = {"read_file": read_file, "write_file": write_file, "edit_file": edit_file}
+def search_files(cwd: Path, pattern: str, path: str = ".", glob: str = "**/*", ignore_case: bool = False,
+                 context: int = 0) -> str:
+    rx = re.compile(pattern, re.IGNORECASE if ignore_case else 0)
+    targets = files(cwd, path, glob if "/" in glob else "**/" + glob)  # as in rg, *.py means at any depth
+    shown, matches = [], 0
+    for name, full in targets:
+        with open(full, encoding="utf-8", errors="replace", newline="") as f:
+            text = f.read()
+        if "\0" in text:  # a binary file
+            continue
+        lines = [line.removesuffix("\r") for line in text.split("\n")]
+        hits = [i for i, line in enumerate(lines) if rx.search(line)]
+        keep = set(hits[:max(SEARCH_LIMIT - matches, 0)])
+        near = {j for i in keep for j in range(max(i - context, 0), min(i + context + 1, len(lines)))}
+        for j in sorted(near):
+            if context and shown and j - 1 not in near:
+                shown.append("--")
+            mark = ":" if j in keep else "-"  # path:line:text for a match, path-line-text around it
+            shown.append(f"{name}{mark}{j + 1}{mark}{lines[j]}")
+        matches += len(hits)
+    if not matches:
+        return f"No matches in {len(targets)} files"
+    more = f"\n[{matches - SEARCH_LIMIT} more matches not shown: narrow the pattern, path or glob]"
+    return cut("\n".join(shown)) + (more if matches > SEARCH_LIMIT else "")
+
+
+def find_files(cwd: Path, pattern: str, path: str = ".") -> str:
+    found = [name for name, _ in files(cwd, path, pattern)]
+    more = f"\n[{len(found) - SEARCH_LIMIT} more files not shown: narrow the pattern or path]"
+    return "\n".join(found[:SEARCH_LIMIT]) + (more if len(found) > SEARCH_LIMIT else "") if found else "No files found"
+
+
+def files(cwd: Path, path: str, pattern: str) -> list[tuple[str, Path]]:
+    """The files under path that match a glob, as (path in the project, full path), sorted by path (Claude Code's Glob
+    sorts by age; here every work copy is new). No hidden folders, and the file tools' rails."""
+    base, root = resolve(cwd, path), cwd.resolve()
+    if base.is_file():
+        return [(base.relative_to(root).as_posix(), base)]
+    if not base.is_dir():
+        raise ValueError(f"No such file or folder: {path}")
+    if re.match(r"([a-zA-Z]:)?[\\/]", pattern):
+        raise ValueError(f"The pattern must be relative to path (the project by default): {pattern}")
+    found = {(full.relative_to(root).as_posix(), full)
+             for p in braces(pattern) for full in map(Path.resolve, base.glob(p)) if full.is_file() and allowed(cwd, full)}
+    return sorted(f for f in found if not HIDDEN.search(f[0]))
+
+
+def braces(pattern: str) -> list[str]:
+    """*.{json,csv} -> *.json, *.csv: pathlib's glob has no braces."""
+    m = re.search(r"\{([^{}]*)\}", pattern)
+    if not m:
+        return [pattern]
+    return [p for alt in m[1].split(",") for p in braces(pattern[:m.start()] + alt + pattern[m.end():])]
+
+
+FILE_TOOLS = {"read_file": read_file, "write_file": write_file, "edit_file": edit_file,
+              "search_files": search_files, "find_files": find_files}
 
 
 def run_shell(command: str, cwd: Path, timeout: float = TIMEOUT_S) -> tuple[int, str]:

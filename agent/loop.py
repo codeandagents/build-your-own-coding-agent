@@ -6,8 +6,8 @@ from .llm import Claude, prompt_tokens
 from .tools import TOOLS, describe, run_tool
 
 SYSTEM = """You are a coding agent working in a software project on the user's machine.
-Use the bash tool to look around and run the tests, and the file tools (read_file, write_file, edit_file) to read and
-edit files. Work in small steps and check your work.
+Use the search tools (search_files, find_files) to look around, the file tools (read_file, write_file, edit_file) to
+read and edit files, and the bash tool to run the tests. Work in small steps and check your work.
 When the task is done, reply with a short summary of what you changed."""
 
 MAX_TURNS = 25           # a task that isn't done by then is stopped (a looping agent is the main cost risk)
