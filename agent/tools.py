@@ -17,6 +17,7 @@ PATH = {"path": {"type": "string", "description": "The file's path, relative to 
 TEXT = {"type": "string"}
 RANGE = {"offset": {"type": "integer", "description": "The first line to read (1 = the first)."},
          "limit": {"type": "integer", "description": "How many lines to read."}}
+MODES = ("files_with_matches", "content", "count")  # search_files' output, as in Claude Code's Grep
 
 TOOLS = [{
     "name": "bash",
@@ -45,11 +46,13 @@ TOOLS = [{
     "input_schema": schema({**PATH, "old_string": TEXT, "new_string": TEXT}, {"replace_all": {"type": "boolean"}}),
 }, {
     "name": "search_files",
-    "description": ("Search file contents for a regular expression (Python syntax). Returns the matching lines as "
-                    "path:line:text, up to 100 matches. Narrow it with path (a folder or one file) and glob (which "
-                    "files, e.g. **/*.py); context shows that many lines around each match."),
-    "input_schema": schema({"pattern": TEXT}, {"path": TEXT, "glob": TEXT, "ignore_case": {"type": "boolean"},
-                                               "context": {"type": "integer"}}),
+    "description": ("Search file contents for a regular expression (Python syntax). output_mode: files_with_matches "
+                    "(the default) lists the files that match, content shows the matching lines as path:line:text "
+                    "(context: lines around each), count gives the matches per file; up to 100 results. Narrow it "
+                    "with path (a folder or one file) and glob (which files: **/*.py; !tickets/** leaves them out)."),
+    "input_schema": schema({"pattern": TEXT}, {"path": TEXT, "glob": TEXT,
+                                               "output_mode": {"type": "string", "enum": list(MODES)},
+                                               "ignore_case": {"type": "boolean"}, "context": {"type": "integer"}}),
 }, {
     "name": "find_files",
     "description": ("Find files by name with a glob pattern: **/*.py (any depth), docs/*.md, *.{json,csv}. Returns "
@@ -113,8 +116,8 @@ def describe(name: str, args: dict) -> str:
     if name == "bash":
         return f"$ {args.get('command', '')}"
     first = "pattern" if "pattern" in args else "path"
-    options = [f"{k}={args[k]}" for k in ("path", "glob", "ignore_case", "context", "offset", "limit", "replace_all")
-               if k in args and k != first]
+    options = [f"{k}={args[k]}" for k in ("path", "glob", "output_mode", "ignore_case", "context", "offset", "limit",
+                                          "replace_all") if k in args and k != first]
     return f"> {name}({', '.join([str(args.get(first, ''))] + options)})"
 
 
@@ -194,50 +197,68 @@ def edit_file(cwd: Path, path: str, old_string: str, new_string: str, replace_al
     return f"Edited {path}: {count} replacement{'s' if count > 1 else ''}, from line {line}"
 
 
-def search_files(cwd: Path, pattern: str, path: str = ".", glob: str = "**/*", ignore_case: bool = False,
-                 context: int = 0) -> str:
+def search_files(cwd: Path, pattern: str, path: str = ".", glob: str = "**/*", output_mode: str = MODES[0],
+                 ignore_case: bool = False, context: int = 0) -> str:
+    if output_mode not in MODES:
+        raise ValueError(f"output_mode must be one of: {', '.join(MODES)}")
     rx = re.compile(pattern, re.IGNORECASE if ignore_case else 0)
-    targets = files(cwd, path, glob if "/" in glob else "**/" + glob)  # as in rg, *.py means at any depth
-    shown, matches = [], 0
+    bang, glob = ("!", glob[1:]) if glob.startswith("!") else ("", glob)
+    targets = files(cwd, path, bang + (glob if "/" in glob else "**/" + glob))  # as in rg, *.py means at any depth
+    hits = {}
     for name, full in targets:
         with open(full, encoding="utf-8", errors="replace", newline="") as f:
             text = f.read()
-        if "\0" in text:  # a binary file
-            continue
         lines = [line.removesuffix("\r") for line in text.split("\n")]
-        hits = [i for i, line in enumerate(lines) if rx.search(line)]
-        keep = set(hits[:max(SEARCH_LIMIT - matches, 0)])
+        if "\0" not in text and (found := [i for i, line in enumerate(lines) if rx.search(line)]):  # \0: binary
+            hits[name] = lines, found
+    total = sum(len(found) for _, found in hits.values())
+    if not hits:
+        return f"No matches in {len(targets)} files"
+    if output_mode == "files_with_matches":
+        return capped(list(hits), "files", "the pattern, path or glob")
+    if output_mode == "count":
+        counts = [f"{name}:{len(found)}" for name, (_, found) in hits.items()]
+        return capped(counts, "files", "the pattern, path or glob") + f"\n{total} matches in {len(hits)} files"
+    shown, left = [], SEARCH_LIMIT
+    for name, (lines, found) in hits.items():
+        keep, left = set(found[:max(left, 0)]), left - len(found)
         near = {j for i in keep for j in range(max(i - context, 0), min(i + context + 1, len(lines)))}
         for j in sorted(near):
             if context and shown and j - 1 not in near:
                 shown.append("--")
             mark = ":" if j in keep else "-"  # path:line:text for a match, path-line-text around it
             shown.append(f"{name}{mark}{j + 1}{mark}{lines[j]}")
-        matches += len(hits)
-    if not matches:
-        return f"No matches in {len(targets)} files"
-    more = f"\n[{matches - SEARCH_LIMIT} more matches not shown: narrow the pattern, path or glob]"
-    return cut("\n".join(shown)) + (more if matches > SEARCH_LIMIT else "")
+    more = f"\n[{total - SEARCH_LIMIT} more matches not shown: narrow the pattern, path or glob]"
+    return cut("\n".join(shown)) + (more if total > SEARCH_LIMIT else "")
 
 
 def find_files(cwd: Path, pattern: str, path: str = ".") -> str:
     found = [name for name, _ in files(cwd, path, pattern)]
-    more = f"\n[{len(found) - SEARCH_LIMIT} more files not shown: narrow the pattern or path]"
-    return "\n".join(found[:SEARCH_LIMIT]) + (more if len(found) > SEARCH_LIMIT else "") if found else "No files found"
+    return capped(found, "files", "the pattern or path") if found else "No files found"
+
+
+def capped(items: list[str], what: str, narrow: str) -> str:
+    more = f"\n[{len(items) - SEARCH_LIMIT} more {what} not shown: narrow {narrow}]"
+    return cut("\n".join(items[:SEARCH_LIMIT])) + (more if len(items) > SEARCH_LIMIT else "")
 
 
 def files(cwd: Path, path: str, pattern: str) -> list[tuple[str, Path]]:
-    """The files under path that match a glob, as (path in the project, full path), sorted by path (Claude Code's Glob
-    sorts by age; here every work copy is new). No hidden folders, and the file tools' rails."""
+    """The files under path that match a glob (!glob: all but those), as (path in the project, full path), sorted by
+    path (Claude Code's Glob sorts by age; here every work copy is new). No hidden folders; the file tools' rails."""
     base, root = resolve(cwd, path), cwd.resolve()
     if base.is_file():
         return [(base.relative_to(root).as_posix(), base)]
     if not base.is_dir():
         raise ValueError(f"No such file or folder: {path}")
-    if re.match(r"([a-zA-Z]:)?[\\/]", pattern):
+    if re.match(r"!?([a-zA-Z]:)?[\\/]", pattern):
         raise ValueError(f"The pattern must be relative to path (the project by default): {pattern}")
-    found = {(full.relative_to(root).as_posix(), full)
-             for p in braces(pattern) for full in map(Path.resolve, base.glob(p)) if full.is_file() and allowed(cwd, full)}
+
+    def matching(glob: str) -> set[tuple[str, Path]]:
+        glob += "/*" if glob.endswith("**") else ""  # tickets/** = the files in it (Python 3.12's ** finds folders)
+        return {(full.relative_to(root).as_posix(), full) for p in braces(glob)
+                for full in map(Path.resolve, base.glob(p)) if full.is_file() and allowed(cwd, full)}
+
+    found = matching("**/*") - matching(pattern[1:]) if pattern.startswith("!") else matching(pattern)
     return sorted(f for f in found if not HIDDEN.search(f[0]))
 
 
