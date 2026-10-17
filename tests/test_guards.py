@@ -1,4 +1,5 @@
 """The spend guards and the loop, offline: a fake client stands in for the API."""
+import io
 import json
 import subprocess
 import time
@@ -7,7 +8,7 @@ from pathlib import Path
 import pytest
 from anthropic.types import Message
 
-from agent import loop
+from agent import loop, tools
 from agent.llm import Claude, SpendRefused, price
 from agent.tools import run_shell, run_tool, tool_env
 
@@ -104,7 +105,8 @@ def test_budget_settings_come_from_config_json(tmp_path):
     assert (c.budget, c.warn_at) == (10.0, 3.5)
 
 
-def test_the_loop_runs_the_tool_and_stops(tmp_path):
+def test_the_loop_runs_the_tool_and_stops(tmp_path, monkeypatch):
+    monkeypatch.setattr(tools, "approve", lambda command: True)  # no sandbox here: the user says yes
     c = claude(tmp_path / "runs", bash_call("echo hello"), message())
     result = loop.run("say hello", c, tmp_path, log=lambda _: None)
     assert (result.stop, result.turns) == ("done", 2)
@@ -124,17 +126,24 @@ def test_the_agents_shell_never_sees_api_keys(monkeypatch):
     assert not [k for k in tool_env() if "KEY" in k.upper()]
 
 
-def test_dot_env_files_are_off_limits(tmp_path):
-    output, is_error = run_tool("bash", {"command": "cat ../.env"}, tmp_path)
-    assert is_error and output.startswith("Blocked")
+def test_without_a_sandbox_a_command_runs_only_with_the_users_yes(tmp_path, monkeypatch):
+    monkeypatch.setattr(tools, "approve", lambda command: False)
+    output, is_error = run_tool("bash", {"command": "touch made.txt"}, tmp_path)
+    assert is_error and output.startswith("Not run") and not (tmp_path / "made.txt").exists()
+    monkeypatch.setattr(tools, "approve", lambda command: True)
+    assert run_tool("bash", {"command": "touch made.txt"}, tmp_path) == ("(no output)", False)
+    assert (tmp_path / "made.txt").exists()
 
 
-@pytest.mark.parametrize("command", ["find / -type d -name petclinic", "ls -la /c", "cd / && find . -name x",
-                                     "cat /c/Users/someone/notes.txt", r"dir C:\Users", "ls /home/ubuntu",
-                                     "grep -rn holiday -i / --include=*.json", "rg closure /"])
-def test_the_rest_of_the_machine_is_off_limits(tmp_path, command):
-    output, is_error = run_tool("bash", {"command": command}, tmp_path)
-    assert is_error and output.startswith("Blocked")
+def test_nobody_at_the_keyboard_means_no(monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("y\n"))  # a pipe, not a terminal: a benchmark run
+    assert not tools.approve("ls")
+
+
+def test_the_model_is_told_whether_its_commands_are_sandboxed():
+    sandboxed = loop.request([])["tools"][0]["description"]
+    asked = loop.request([], sandboxed=False)["tools"][0]["description"]
+    assert "a Linux container with no network" in sandboxed and "the user approves each command" in asked
 
 
 def test_home_is_the_project(tmp_path):

@@ -1,12 +1,14 @@
 """The tools the model can call: a shell (episode 1), file tools modelled on Claude Code's Read, Write and Edit
 (episode 2), search tools modelled on its Grep and Glob (episode 2 too), and Claude Code's limits on how much of a
-tool's output reaches the model (episode 3: the context budget)."""
+tool's output reaches the model (episode 3: the context budget). The shell runs in a sandbox (episode 4)."""
 import os
 import re
 import signal
 import subprocess
 import sys
 from pathlib import Path
+
+from .sandbox import Sandbox
 
 
 def schema(required: dict, optional: dict | None = None) -> dict:
@@ -20,19 +22,26 @@ RANGE = {"offset": {"type": "integer", "description": "The first line to read (1
          "limit": {"type": "integer", "description": "How many lines to read."}}
 MODES = ("files_with_matches", "content", "count")  # search_files' output, as in Claude Code's Grep
 
-TOOLS = [{
-    "name": "bash",
-    "description": ("Run a shell command in the project directory and get its output (stdout and stderr). "
-                    "Use it to run the tests and other programs. "
-                    # Claude Code's Bash tool steers the same way: without this sentence, 95% of the work stayed in bash
-                    "Don't use it to search, read or change files: search file contents with search_files (not grep "
-                    "or rg), find files by name with find_files (not find or ls), read with read_file (not cat, head, "
-                    "tail or sed -n), edit with edit_file (not sed -i or scripts) and create files with write_file "
-                    "(not echo or cat <<EOF). Each command runs in a fresh shell and times out after 60 seconds. "
-                    "Output over 30,000 characters is saved to a file: you get its path and the first 2,000 "
-                    "characters."),
-    "input_schema": schema({"command": {"type": "string", "description": "The command to run."}}),
-}, {
+BASH = ("Run a shell command in the project directory and get its output (stdout and stderr). "
+        "Use it to run the tests and other programs. "
+        # Claude Code's Bash tool steers the same way: without this sentence, 95% of the work stayed in bash
+        "Don't use it to search, read or change files: search file contents with search_files (not grep "
+        "or rg), find files by name with find_files (not find or ls), read with read_file (not cat, head, "
+        "tail or sed -n), edit with edit_file (not sed -i or scripts) and create files with write_file "
+        "(not echo or cat <<EOF). Each command runs in a fresh shell and times out after 60 seconds. "
+        "Output over 30,000 characters is saved to a file: you get its path and the first 2,000 characters.")
+# Claude Code's Bash tool tells the model about its sandbox too
+WHERE = {True: (" Commands run in a sandbox: a Linux container with no network that shares only the project folder "
+                "with the user's machine (its /tmp is its own)."),
+         False: " There is no sandbox: the user approves each command before it runs."}
+
+
+def bash_tool(sandboxed: bool = True) -> dict:
+    return {"name": "bash", "description": BASH + WHERE[sandboxed],
+            "input_schema": schema({"command": {"type": "string", "description": "The command to run."}})}
+
+
+TOOLS = [bash_tool(), {
     "name": "read_file",
     "description": ("Read a text file, with line numbers: up to 2000 lines or 40,000 characters. A longer file "
                     "comes back as its first page, with a note on how to read on with offset and limit; a whole file "
@@ -79,14 +88,8 @@ PAGE_MAX = 40_000       # characters per read_file call: Claude Code's 25,000 to
 WHOLE_MAX = 256 * 1024  # bytes: a whole file larger than this is refused (read a part, or search it), as in Claude Code
 SAVED = ".outputs"      # long results go here, inside the project, where the file tools can read them
 BENIGN = re.compile(r"(grep|rg|egrep|fgrep|find|diff|test|git\s+(diff|grep))\b|\[\s")  # exit 1 isn't a failure
-# Placeholders until episode 4 builds a real sandbox: refuse the obviously dangerous, and keep the agent off the rest
-# of the machine (in the first baseline, 2026-10-16, Haiku ran `cd ~` and then `find /` when it felt lost).
-ROOT = r"(/|/[a-zA-Z]|[a-zA-Z]:[\\/]?)(?=$|[\s;&|)])"  # a filesystem or drive root: / /c C:\ C:
-BLOCKED = [r"\brm\s+-\w*r\w*\s+(/|~|\.\.)", r"\bgit\s+push\b", r"\b(curl|wget)\b", r"\bpip\s+install\b",
-           r"\.env\b",
-           r"\b(find|ls|du|tree|cd)\s+(-\S+\s+)*" + ROOT,      # whole-disk scans, or a cd to the root
-           r"\b(grep|rg)\b[^|;&]*\s" + ROOT,                  # a search over the whole disk
-           r"(?i)(/[a-z]/Users\b|[a-z]:[\\/]+Users\b|/home/)"]  # people's home folders
+# Episodes 1-3 refused commands that matched a list of patterns (curl, find /, .env...). The sandbox replaced them;
+# bench/escape.py keeps the list, to show what it missed.
 SECRET = re.compile(r"KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL", re.IGNORECASE)
 
 
@@ -104,7 +107,7 @@ def shell() -> list[str]:
 def tool_env(home: Path | None = None) -> dict:
     """The agent's shell never sees API keys, and finds this environment's python and pytest first.
     HOME is the project folder, so `cd ~` lands there and not in the user's own files."""
-    env = {k: v for k, v in os.environ.items() if not SECRET.search(k)}
+    env = {k: v for k, v in os.environ.items() if not SECRET.search(k) and k != "OLDPWD"}  # ep 3: `cd "$OLDPWD"`
     env["PATH"] = str(Path(sys.executable).parent) + os.pathsep + env.get("PATH", "")
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     env["PYTHONIOENCODING"] = "utf-8"
@@ -113,10 +116,10 @@ def tool_env(home: Path | None = None) -> dict:
     return env
 
 
-def run_tool(name: str, args: dict, cwd: Path) -> tuple[str, bool]:
+def run_tool(name: str, args: dict, cwd: Path, box: Sandbox | None = None) -> tuple[str, bool]:
     """Returns (output, is_error)."""
     if name == "bash":
-        return bash(args.get("command", ""), cwd)
+        return bash(args.get("command", ""), cwd, box)
     if name not in FILE_TOOLS:
         return f"Unknown tool: {name}", True
     try:
@@ -157,11 +160,12 @@ def ends(output: str) -> str:
     return f"{output[:half]}\n[... {len(output) - 2 * half} characters cut from the middle ...]\n{output[-half:]}"
 
 
-def bash(command: str, cwd: Path) -> tuple[str, bool]:
-    if any(re.search(pattern, command) for pattern in BLOCKED):
-        return f"Blocked by the harness: {command}", True
+def bash(command: str, cwd: Path, box: Sandbox | None = None) -> tuple[str, bool]:
+    """In the sandbox every command runs: the container is the boundary. Without one, the user approves each."""
+    if box is None and not approve(command):
+        return "Not run: there is no sandbox, and the user didn't approve this command.", True
     try:
-        returncode, output = run_shell(command, cwd)
+        returncode, output = box.run(command, TIMEOUT_S) if box else run_shell(command, cwd)
     except subprocess.TimeoutExpired:
         return f"Timed out after {TIMEOUT_S} s", True
     last = re.split(r"\|\||&&|[|;\n]", command.strip())[-1].strip()  # whose exit code the shell returns
@@ -172,8 +176,14 @@ def bash(command: str, cwd: Path) -> tuple[str, bool]:
     return output or "(no output)", False
 
 
+def approve(command: str) -> bool:
+    """The permission prompt for a command outside the sandbox. Nobody at the keyboard (a benchmark run) means no."""
+    return sys.stdin.isatty() and input("Run it outside the sandbox? [y/N] ").strip().lower() == "y"
+
+
 def resolve(cwd: Path, path: str) -> Path:
-    """The model's path, kept to the project folder (the same rails as bash: no other folders, no .env)."""
+    """The model's path, kept to the project folder and away from .env files. The file tools run on this machine,
+    outside the sandbox (as Claude Code's do): this check is their permission rule."""
     if os.name == "nt":
         path = re.sub(r"^/([a-zA-Z])/", r"\1:/", path)  # Git Bash's /c/... is C:/...
     full = (cwd / path).resolve()

@@ -3,7 +3,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .llm import Claude, prompt_tokens
-from .tools import TOOLS, describe, run_tool
+from .sandbox import Sandbox
+from .tools import TOOLS, bash_tool, describe, run_tool
 
 SYSTEM = """You are a coding agent working in a software project on the user's machine.
 Use the search tools (search_files, find_files) to look around, the file tools (read_file, write_file, edit_file) to
@@ -20,16 +21,18 @@ class Result:
     turns: int
 
 
-def request(messages: list) -> dict:
+def request(messages: list, sandboxed: bool = True) -> dict:
     """One turn's request. cache_control: the API caches the prompt so far; the next turn reads it at 1/10 price."""
-    return dict(system=SYSTEM, tools=TOOLS, messages=messages, max_tokens=8000,
+    tools = TOOLS if sandboxed else [bash_tool(sandboxed=False), *TOOLS[1:]]
+    return dict(system=SYSTEM, tools=tools, messages=messages, max_tokens=8000,
                 cache_control={"type": "ephemeral"}, output_config={"effort": "low"})
 
 
-def run(task: str, claude: Claude, cwd: Path, *, label: str = "", log=print) -> Result:
+def run(task: str, claude: Claude, cwd: Path, *, label: str = "", log=print, box: Sandbox | None = None) -> Result:
+    """box: the sandbox the shell runs in. Without one, every command waits for the user's yes."""
     messages = [{"role": "user", "content": task}]
     for turn in range(1, MAX_TURNS + 1):
-        response = claude.create(task=label, **request(messages))
+        response = claude.create(task=label, **request(messages, sandboxed=box is not None))
         messages.append({"role": "assistant", "content": response.content})
         for block in response.content:
             if block.type == "text" and block.text.strip():
@@ -41,7 +44,7 @@ def run(task: str, claude: Claude, cwd: Path, *, label: str = "", log=print) -> 
         results = []
         for call in calls:
             log(describe(call.name, call.input))
-            output, is_error = run_tool(call.name, call.input, cwd)
+            output, is_error = run_tool(call.name, call.input, cwd, box)
             log(output if len(output) < 1500 else output[:1500] + "\n...")
             results.append({"type": "tool_result", "tool_use_id": call.id, "content": output, "is_error": is_error})
         messages.append({"role": "user", "content": results})

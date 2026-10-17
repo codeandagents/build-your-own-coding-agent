@@ -1,7 +1,15 @@
 """The context budget (episode 3), offline: how much of a tool's output reaches the model, and how it gets the rest.
 Claude Code's rules: a long result is saved to a file (path + preview), a failed command keeps its start and end, a
 long file is read in pages with a PARTIAL notice, and a search pages on with offset."""
+import pytest
+
+from agent import tools
 from agent.tools import FAILED_MAX, INLINE_MAX, PAGE_MAX, PREVIEW, SEARCH_LIMIT, TOOLS, WHOLE_MAX, run_tool
+
+
+@pytest.fixture(autouse=True)
+def approved(monkeypatch):
+    monkeypatch.setattr(tools, "approve", lambda command: True)  # bash runs on this machine here: the user says yes
 
 
 def call(tmp_path, name, **args):

@@ -10,6 +10,7 @@ import time
 
 from agent import loop
 from agent.llm import RUNS, Claude, SpendRefused, price
+from agent.sandbox import Sandbox, available
 
 from .tasks import load, prepare, score
 
@@ -88,6 +89,9 @@ def main() -> int:
     tasks = load(args.tasks.split(",") if args.tasks else None)
     if args.plan:
         return plan(args, tasks)
+    if missing := available():  # the agent never runs commands on this machine unattended
+        print(f"The benchmark runs the agent only in its sandbox, and the sandbox can't start: {missing}")
+        return 2
 
     run_id = f"{args.label}-{time.strftime('%Y%m%d-%H%M%S')}"
     rows = []
@@ -98,7 +102,9 @@ def main() -> int:
                 claude = Claude(run=run_id, salt=f"r{r}", run_budget_usd=args.run_budget, replay_only=args.replay_only)
                 print(f"\n=== {task.id} (repeat {r + 1}) in {folder}")
                 before = len(claude.ledger.entries())  # this try's requests only, not the task's earlier tries
-                result = loop.run(task.prompt, claude, folder, label=task.id, log=brief if args.brief else print)
+                with Sandbox(folder) as box:
+                    result = loop.run(task.prompt, claude, folder, label=task.id, log=brief if args.brief else print,
+                                      box=box)
                 passed, summary = score(task, folder)
                 spent = [e for e in claude.ledger.entries()[before:] if e["run"] == run_id and e["task"] == task.id]
                 rows.append({"task": task.id, "repeat": r, "stop": result.stop, "turns": result.turns,
