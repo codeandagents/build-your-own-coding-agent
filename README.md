@@ -26,7 +26,7 @@ bench/run.py        run the agent on the tasks and score it
 bench/board.py      print a run's scoreboard
 results/            the scoreboards the videos show (ep01.jsonl = the episode-1 baseline; ep02-tools-only.jsonl,
                     ep02-steer.jsonl, ep02-search-lines.jsonl and ep02.jsonl = episode 2's steps, the last one
-                    its final harness)
+                    its final harness; the -r4-6 files add tries 4-6 to three of them)
 ```
 
 ## Run it
@@ -39,6 +39,7 @@ uv sync
 uv run pytest -q                          # the harness's own tests: offline, no key needed
 uv run python -m bench.selfcheck          # every task is fair: tests pass at the start, the hidden check fails
 uv run python -m bench.board results/ep02.jsonl   # an episode's scoreboard, no key needed
+uv run python -m bench.board results/ep02.jsonl results/ep02-r4-6.jsonl   # one board over 6 tries
 ```
 
 With an Anthropic API key (`BYOCA_API_KEY`, or the usual `ANTHROPIC_API_KEY`):
