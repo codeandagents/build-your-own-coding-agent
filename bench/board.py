@@ -1,7 +1,8 @@
-"""python -m bench.board RESULTS: the scoreboard of a benchmark run, one row per task and one column per try.
+"""python -m bench.board RESULTS [RESULTS ...]: the scoreboard of a benchmark run, one row per task and one column per try.
 
 RESULTS is a results file (results/ep01.jsonl) or a run label (.runs/results/<label>.jsonl). A file that holds
-several runs shows the last one. Spends nothing."""
+several runs shows the last one. Several files make one board: later tries of the same harness (a run made with
+--first-repeat 3 adds tries 4-6). Spends nothing."""
 import json
 import sys
 from pathlib import Path
@@ -21,7 +22,10 @@ def rows_of(arg: str) -> list[dict]:
 
 
 def main() -> int:
-    rows = rows_of(sys.argv[1])
+    rows = [row for arg in sys.argv[1:] for row in rows_of(arg)]
+    tries_seen = [(r["task"], r["repeat"]) for r in rows]
+    if len(set(tries_seen)) < len(tries_seen):
+        raise SystemExit("the same try appears in two files: give each harness's runs once")
     tasks = list(dict.fromkeys(r["task"] for r in rows))
     tries = max(r["repeat"] for r in rows) + 1
     print(f"{'task':22}" + "".join(f"{'try %d' % (i + 1):>7}" for i in range(tries)) + f"{'turns':>7}{'cost':>9}")
@@ -35,10 +39,10 @@ def main() -> int:
     passed = sum(r["passed"] for r in rows)
     smoke = [r for r in rows if r["task"] in tasks[:SMOKE]]
     hard = [r for r in rows if r["task"] in tasks[SMOKE:]]
-    day = rows[0]["run"].rsplit("-", 2)[-2]
+    days = sorted({r["run"].rsplit("-", 2)[-2] for r in rows})
     print(f"Score {passed}/{len(rows)} ({passed / len(rows):.0%}): smoke {sum(r['passed'] for r in smoke)}/{len(smoke)}, "
           f"hard {sum(r['passed'] for r in hard)}/{len(hard)}. ${sum(r['usd'] for r in rows):.4f}, "
-          f"{day[:4]}-{day[4:6]}-{day[6:]}.")
+          + ", ".join(f"{d[:4]}-{d[4:6]}-{d[6:]}" for d in days) + ".")
     return 0
 
 

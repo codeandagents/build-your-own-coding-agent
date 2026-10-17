@@ -1,4 +1,5 @@
-"""python -m bench.run [--tasks t01,t02] [--repeat N] [--label NAME] [--plan] [--run-budget USD] [--replay-only] [--brief]
+"""python -m bench.run [--tasks t01,t02] [--repeat N] [--first-repeat N] [--label NAME] [--plan] [--run-budget USD]
+[--replay-only] [--brief]
 
 Runs the agent on each task in a fresh copy of the project, scores it with the hidden checks, prints a scoreboard
 and appends it to .runs/results/<label>.jsonl. --plan spends nothing: it counts the first request's tokens
@@ -76,6 +77,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog="bench.run")
     parser.add_argument("--tasks", help="comma-separated task ids or prefixes (default: all)")
     parser.add_argument("--repeat", type=int, default=1)
+    parser.add_argument("--first-repeat", type=int, default=0,
+                        help="number the tries from here: --first-repeat 3 --repeat 3 adds tries 4-6, new requests")
     parser.add_argument("--label", default="dev")
     parser.add_argument("--plan", action="store_true", help="estimate only; spends nothing")
     parser.add_argument("--run-budget", type=float, default=0.50, help="stop this run once it has cost this much")
@@ -89,7 +92,7 @@ def main() -> int:
     run_id = f"{args.label}-{time.strftime('%Y%m%d-%H%M%S')}"
     rows = []
     try:
-        for r in range(args.repeat):
+        for r in range(args.first_repeat, args.first_repeat + args.repeat):
             for task in tasks:
                 folder = prepare(task)
                 claude = Claude(run=run_id, salt=f"r{r}", run_budget_usd=args.run_budget, replay_only=args.replay_only)
