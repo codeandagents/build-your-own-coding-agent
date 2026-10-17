@@ -1,4 +1,5 @@
-"""The tools the model can call. Episode 1 has one: a shell."""
+"""The tools the model can call: a shell (episode 1), and file tools modelled on Claude Code's Read, Write and Edit
+(episode 2)."""
 import os
 import re
 import signal
@@ -6,19 +7,41 @@ import subprocess
 import sys
 from pathlib import Path
 
+
+def schema(required: dict, optional: dict | None = None) -> dict:
+    return {"type": "object", "properties": {**required, **(optional or {})}, "required": list(required),
+            "additionalProperties": False}
+
+
+PATH = {"path": {"type": "string", "description": "The file's path, relative to the project directory."}}
+TEXT = {"type": "string"}
+RANGE = {"offset": {"type": "integer", "description": "The first line to read (1 = the first)."},
+         "limit": {"type": "integer", "description": "How many lines to read."}}
+
 TOOLS = [{
     "name": "bash",
     "description": ("Run a shell command in the project directory and get its output (stdout and stderr). "
-                    "Use it to list and read files, edit them, and run the tests. "
+                    "Use it to look around and run the tests; read and edit files with the file tools. "
                     "Each command runs in a fresh shell and times out after 60 seconds."),
-    "input_schema": {
-        "type": "object",
-        "properties": {"command": {"type": "string", "description": "The command to run."}},
-        "required": ["command"],
-        "additionalProperties": False,
-    },
+    "input_schema": schema({"command": {"type": "string", "description": "The command to run."}}),
+}, {
+    "name": "read_file",
+    "description": ("Read a text file, with line numbers. Reads up to 2000 lines from the start; "
+                    "read a long file in ranges with offset and limit."),
+    "input_schema": schema(PATH, RANGE),
+}, {
+    "name": "write_file",
+    "description": "Create a file, or replace all of its content. To change part of a file, use edit_file.",
+    "input_schema": schema({**PATH, "content": TEXT}),
+}, {
+    "name": "edit_file",
+    "description": ("Replace text in a file. old_string must match the file exactly, indentation included, and occur "
+                    "exactly once: if it occurs more often, add lines around it to make it unique, or set replace_all "
+                    "to replace every occurrence. Read the file first."),
+    "input_schema": schema({**PATH, "old_string": TEXT, "new_string": TEXT}, {"replace_all": {"type": "boolean"}}),
 }]
 
+READ_LIMIT = 2000  # lines per read_file call, as in Claude Code's Read
 TIMEOUT_S = 60
 MAX_OUTPUT = 20_000  # characters: a guard against one command filling the context (episode 5 does it properly)
 # Placeholders until episode 4 builds a real sandbox: refuse the obviously dangerous, and keep the agent off the rest
@@ -57,20 +80,97 @@ def tool_env(home: Path | None = None) -> dict:
 
 def run_tool(name: str, args: dict, cwd: Path) -> tuple[str, bool]:
     """Returns (output, is_error)."""
-    if name != "bash":
+    if name == "bash":
+        return bash(args.get("command", ""), cwd)
+    if name not in FILE_TOOLS:
         return f"Unknown tool: {name}", True
-    command = args.get("command", "")
+    try:
+        return FILE_TOOLS[name](cwd, **args) or "(no output)", False
+    except (OSError, ValueError, TypeError) as e:  # a refused edit, a missing file, a wrong argument
+        return str(e), True
+
+
+def describe(name: str, args: dict) -> str:
+    """The call as one log line: a command as typed, a file tool as a call."""
+    if name == "bash":
+        return f"$ {args.get('command', '')}"
+    options = [f"{k}={args[k]}" for k in ("offset", "limit", "replace_all") if k in args]
+    return f"> {name}({', '.join([str(args.get('path', ''))] + options)})"
+
+
+def cut(output: str) -> str:
+    if len(output) <= MAX_OUTPUT:
+        return output
+    return output[:MAX_OUTPUT] + f"\n[... {len(output) - MAX_OUTPUT} more characters cut]"
+
+
+def bash(command: str, cwd: Path) -> tuple[str, bool]:
     if any(re.search(pattern, command) for pattern in BLOCKED):
         return f"Blocked by the harness: {command}", True
     try:
         returncode, output = run_shell(command, cwd)
     except subprocess.TimeoutExpired:
         return f"Timed out after {TIMEOUT_S} s", True
-    if len(output) > MAX_OUTPUT:
-        output = output[:MAX_OUTPUT] + f"\n[... {len(output) - MAX_OUTPUT} more characters cut]"
+    output = cut(output)
     if returncode:
         output += f"\n[exit code {returncode}]"
     return output or "(no output)", False
+
+
+def resolve(cwd: Path, path: str) -> Path:
+    """The model's path, kept to the project folder (the same rails as bash: no other folders, no .env)."""
+    if os.name == "nt":
+        path = re.sub(r"^/([a-zA-Z])/", r"\1:/", path)  # Git Bash's /c/... is C:/...
+    full = (cwd / path).resolve()
+    if not full.is_relative_to(cwd.resolve()) or re.search(r"\.env\b", str(full), re.IGNORECASE):
+        raise ValueError(f"Blocked by the harness: {path}")
+    return full
+
+
+def read_text(full: Path, path: str) -> str:
+    if not full.is_file():
+        raise ValueError(f"No such file: {path}")
+    with open(full, encoding="utf-8", newline="") as f:  # newline="": the file's own line ends, \r\n kept
+        return f.read()
+
+
+def read_file(cwd: Path, path: str, offset: int = 1, limit: int = READ_LIMIT) -> str:
+    text = read_text(resolve(cwd, path), path)
+    lines = text.removesuffix("\n").split("\n") if text else []
+    first = max(int(offset), 1)
+    shown = [line.removesuffix("\r") for line in lines[first - 1:first - 1 + int(limit)]]
+    if not shown:
+        return f"({path} has {len(lines)} lines)"
+    return cut("\n".join(f"{n:>6}\t{line}" for n, line in enumerate(shown, first)))
+
+
+def write_file(cwd: Path, path: str, content: str) -> str:
+    full = resolve(cwd, path)
+    full.parent.mkdir(parents=True, exist_ok=True)
+    full.write_text(content, encoding="utf-8", newline="")  # UTF-8, and no \n -> \r\n on Windows
+    return f"Wrote {path} ({len(content)} characters)"
+
+
+def edit_file(cwd: Path, path: str, old_string: str, new_string: str, replace_all: bool = False) -> str:
+    full = resolve(cwd, path)
+    text = read_text(full, path)
+    if not old_string or old_string == new_string:
+        raise ValueError("old_string must be non-empty and differ from new_string (write_file creates a file)")
+    count = text.count(old_string)
+    if not count and "\r\n" in text:  # Windows line ends, which read_file doesn't show
+        old_string, new_string = old_string.replace("\n", "\r\n"), new_string.replace("\n", "\r\n")
+        count = text.count(old_string)
+    if not count:
+        raise ValueError(f"old_string not found in {path}: it must match the file exactly, indentation included")
+    if count > 1 and not replace_all:
+        raise ValueError(f"old_string occurs {count} times in {path}: add lines around it to make it unique, "
+                         "or set replace_all to replace every occurrence")
+    line = text[:text.index(old_string)].count("\n") + 1
+    full.write_text(text.replace(old_string, new_string), encoding="utf-8", newline="")
+    return f"Edited {path}: {count} replacement{'s' if count > 1 else ''}, from line {line}"
+
+
+FILE_TOOLS = {"read_file": read_file, "write_file": write_file, "edit_file": edit_file}
 
 
 def run_shell(command: str, cwd: Path, timeout: float = TIMEOUT_S) -> tuple[int, str]:

@@ -3,10 +3,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .llm import Claude, prompt_tokens
-from .tools import TOOLS, run_tool
+from .tools import TOOLS, describe, run_tool
 
 SYSTEM = """You are a coding agent working in a software project on the user's machine.
-Use the bash tool to look around, read and edit files, and run the tests. Work in small steps and check your work.
+Use the bash tool to look around and run the tests, and the file tools (read_file, write_file, edit_file) to read and
+edit files. Work in small steps and check your work.
 When the task is done, reply with a short summary of what you changed."""
 
 MAX_TURNS = 25           # a task that isn't done by then is stopped (a looping agent is the main cost risk)
@@ -39,7 +40,7 @@ def run(task: str, claude: Claude, cwd: Path, *, label: str = "", log=print) -> 
 
         results = []
         for call in calls:
-            log(f"$ {call.input.get('command', '')}")
+            log(describe(call.name, call.input))
             output, is_error = run_tool(call.name, call.input, cwd)
             log(output if len(output) < 1500 else output[:1500] + "\n...")
             results.append({"type": "tool_result", "tool_use_id": call.id, "content": output, "is_error": is_error})

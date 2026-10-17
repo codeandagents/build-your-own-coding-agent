@@ -64,7 +64,7 @@ def brief(text: str) -> None:
     Display only: the model still gets the whole output."""
     if text.startswith("agent: "):
         print(f"{CYAN}{text}{PLAIN}")
-    elif text.startswith("$ "):
+    elif text.startswith(("$ ", "> ")):  # a command, or a file tool's call
         print(f"{YELLOW}{text}{PLAIN}")
     else:
         lines = text.splitlines()

@@ -14,7 +14,7 @@ with open(sys.argv[1], encoding="utf-8", errors="replace") as f:
         if m:
             task, rep = m.group(1), m.group(2)
             continue
-        if line.startswith("$ "):
+        if re.match(r"\$ |> \w+\(", line):  # a command, or a file tool's call (not pytest's "> " source lines)
             cmd = line[2:].rstrip()
             reasons = [name for name, rx in (("abs", ABS), ("..", UP)) if rx.search(cmd)]
             if reasons:
