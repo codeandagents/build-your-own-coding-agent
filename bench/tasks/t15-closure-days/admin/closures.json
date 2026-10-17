@@ -1,0 +1,25 @@
+{
+  "clinic": "Harbourside Vets",
+  "note": "Days the clinic is closed on a weekday: Auckland public holidays (observed dates) and staff training days.",
+  "closures": [
+    {"date": "2026-10-26", "reason": "Labour Day"},
+    {"date": "2026-11-18", "reason": "Staff training day"},
+    {"date": "2026-12-25", "reason": "Christmas Day"},
+    {"date": "2026-12-28", "reason": "Boxing Day (observed)"},
+    {"date": "2027-01-01", "reason": "New Year's Day"},
+    {"date": "2027-01-04", "reason": "Day after New Year's Day (observed)"},
+    {"date": "2027-02-01", "reason": "Auckland Anniversary Day"},
+    {"date": "2027-02-08", "reason": "Waitangi Day (observed)"},
+    {"date": "2027-03-19", "reason": "Staff training day"},
+    {"date": "2027-03-26", "reason": "Good Friday"},
+    {"date": "2027-03-29", "reason": "Easter Monday"},
+    {"date": "2027-04-26", "reason": "ANZAC Day (observed)"},
+    {"date": "2027-06-07", "reason": "King's Birthday"},
+    {"date": "2027-06-16", "reason": "Staff training day"},
+    {"date": "2027-06-25", "reason": "Matariki"},
+    {"date": "2027-09-17", "reason": "Staff training day"},
+    {"date": "2027-10-25", "reason": "Labour Day"},
+    {"date": "2027-12-27", "reason": "Christmas Day (observed)"},
+    {"date": "2027-12-28", "reason": "Boxing Day (observed)"}
+  ]
+}

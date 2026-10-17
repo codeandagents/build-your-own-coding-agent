@@ -1,0 +1,7 @@
+[
+  {"file": "petclinic/money.py",
+   "find": "    \"\"\"`percent` per cent of an amount in cents, rounded half up to the cent.\"\"\"\n    return (cents * percent + 50) // 100\n",
+   "replace": "    \"\"\"`percent` per cent of an amount in cents, to the nearest cent.\"\"\"\n    return round(cents * percent / 100)\n"},
+  {"file": "petclinic/billing/takings.py", "find": "        row[\"paid\"] += payment.cents\n",
+   "replace": "        row[\"paid\"] += payment.cents + surcharge_in(payment.cents, payment.method)\n"}
+]

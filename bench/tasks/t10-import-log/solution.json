@@ -1,0 +1,9 @@
+[
+  {"file": "petclinic/importer.py", "find": "from datetime import date\n", "replace": "from datetime import date, datetime\n"},
+  {"file": "petclinic/importer.py", "find": "def parse_birth_date(text: str) -> date:\n    return date.fromisoformat(text.strip())\n",
+   "replace": "def parse_birth_date(text: str) -> date:\n    \"\"\"ISO (2019-11-03), or the day-first dates Devonport's PCs type (03/11/2019).\"\"\"\n    text = text.strip()\n    if \"/\" in text:\n        return datetime.strptime(text, \"%d/%m/%Y\").date()\n    return date.fromisoformat(text)\n"},
+  {"file": "petclinic/importer.py", "find": "COLUMNS = (\"owner_name\", \"owner_phone\", \"pet_name\", \"species\", \"birth_date\", \"notes\")\n",
+   "replace": "COLUMNS = (\"owner_name\", \"owner_phone\", \"pet_name\", \"species\", \"birth_date\", \"notes\")\nOLD_SPECIES_NAMES = {\"canine\": \"dog\", \"feline\": \"cat\"}  # ClinicMaster 3's records\n"},
+  {"file": "petclinic/importer.py", "find": "            species = row[\"species\"].strip().lower()\n",
+   "replace": "            species = row[\"species\"].strip().lower()\n            species = OLD_SPECIES_NAMES.get(species, species)\n"}
+]

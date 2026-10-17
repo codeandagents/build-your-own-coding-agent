@@ -1,0 +1,13 @@
+[project]
+name = "build-your-own-coding-agent"
+version = "0.1.0"
+description = "A coding agent built from scratch in Python, one harness part per episode (Code & Agents)."
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=1.15.0",
+    "pytest>=8.4",    # the agent runs the sample project's tests with this environment
+    "tzdata>=2025.2", # time zones on Windows (zoneinfo has no database there)
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

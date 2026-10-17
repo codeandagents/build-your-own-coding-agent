@@ -1,0 +1,9 @@
+2026-09-14 06:00:01,011 INFO petclinic.importer: row 2: Molly (dog) for Yuki Taylor
+2026-09-14 06:00:01,021 INFO petclinic.importer: row 3: Pepper (guinea pig) for Grace Parata
+2026-09-14 06:00:01,028 INFO petclinic.importer: row 4: Daisy (dog) for Grace Parata
+2026-09-14 06:00:01,045 INFO petclinic.importer: row 5: Pickle (cat) for Lily Ito
+2026-09-14 06:00:01,061 INFO petclinic.importer: row 6: Teddy (cat) for Lily Ito
+2026-09-14 06:00:01,099 INFO petclinic.importer: row 7: Marlo (cat) for Noah Jones
+2026-09-14 06:00:01,134 INFO petclinic.importer: row 8: Juno already on file
+2026-09-14 06:00:01,141 INFO petclinic.importer: row 9: Tui already on file
+2026-09-14 06:00:01,146 INFO petclinic.importer: import finished: 4 owners and 6 pets added, 0 rows skipped

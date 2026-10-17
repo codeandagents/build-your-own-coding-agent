@@ -1,0 +1,11 @@
+[
+  {"file": "petclinic/models.py", "find": "    telephone: str\n", "replace": "    phone: str\n"},
+  {"file": "petclinic/store.py", "find": "telephone", "replace": "phone", "all": true},
+  {"file": "petclinic/store.py", "find": "        for o in data[\"owners\"]:\n            store.owners[o[\"id\"]] = Owner(**o)\n",
+   "replace": "        for o in data[\"owners\"]:\n            if \"telephone\" in o:  # files saved before the rename\n                o = {**o, \"phone\": o[\"telephone\"]}\n                del o[\"telephone\"]\n            store.owners[o[\"id\"]] = Owner(**o)\n"},
+  {"file": "petclinic/sms.py", "find": "owner.telephone", "replace": "owner.phone"},
+  {"file": "petclinic/booking.py", "find": "same_number(o.telephone,", "replace": "same_number(o.phone,"},
+  {"file": "petclinic/search.py", "find": "owner.telephone", "replace": "owner.phone", "all": true},
+  {"file": "petclinic/importer.py", "find": "owner.telephone", "replace": "owner.phone"},
+  {"file": "petclinic/cli.py", "find": ".telephone", "replace": ".phone", "all": true}
+]

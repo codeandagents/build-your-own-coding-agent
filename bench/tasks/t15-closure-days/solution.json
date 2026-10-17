@@ -1,0 +1,4 @@
+[
+  {"file": "petclinic/scheduling.py", "find": "from zoneinfo import ZoneInfo\n", "replace": "from zoneinfo import ZoneInfo\n\nfrom .closures import CLOSURE_DAYS\n"},
+  {"file": "petclinic/scheduling.py", "find": "    \"\"\"Free appointment start times on `day`. The clinic is closed at weekends.\"\"\"\n    if day.weekday() >= 5:\n", "replace": "    \"\"\"Free appointment start times on `day`. The clinic is closed at weekends and on closure days.\"\"\"\n    if day.weekday() >= 5 or day in CLOSURE_DAYS:\n"}
+]

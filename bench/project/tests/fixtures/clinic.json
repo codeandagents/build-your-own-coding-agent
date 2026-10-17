@@ -1,0 +1,46 @@
+{
+  "owners": [
+    {"id": 1, "name": "Aroha Ngata", "telephone": "021 555 0101", "email": "aroha.ngata@example.com"},
+    {"id": 2, "name": "Ben Carter", "telephone": "027 555 0199"},
+    {"id": 3, "name": "Mei Lin", "telephone": "022-555-0142", "email": "mei.lin@example.net"},
+    {"id": 4, "name": "Tama Parata", "telephone": "09 555 0144"},
+    {"id": 5, "name": "Kauri Aumua", "telephone": "021 555 0912", "insurer": "PetCover"}
+  ],
+  "pets": [
+    {"id": 1, "name": "Kiwi", "species": "dog", "birth_date": "2019-04-12", "owner_id": 1, "breed": "Huntaway", "microchip": "985141000123456"},
+    {"id": 2, "name": "Pip", "species": "cat", "birth_date": "2022-11-03", "owner_id": 1, "breed": "Domestic shorthair"},
+    {"id": 3, "name": "Rocket", "species": "rabbit", "birth_date": "2024-02-29", "owner_id": 2, "breed": "Netherland dwarf"},
+    {"id": 4, "name": "Mochi", "species": "cat", "birth_date": "2021-07-08", "owner_id": 3, "breed": "Burmese", "microchip": "985141000654321"},
+    {"id": 5, "name": "Moana", "species": "dog", "birth_date": "2020-06-01", "owner_id": 4, "breed": "Labrador"},
+    {"id": 6, "name": "Biscuit", "species": "cat", "birth_date": "2018-02-14", "owner_id": 5, "breed": "Ragdoll"}
+  ],
+  "visits": [
+    {"id": 1, "pet_id": 1, "start": "2026-10-12T09:00", "reason": "annual check-up", "vet_id": 1},
+    {"id": 2, "pet_id": 3, "start": "2026-10-13T11:30", "reason": "teeth", "vet_id": 2},
+    {"id": 3, "pet_id": 4, "start": "2026-10-14T16:00", "reason": "vaccination", "vet_id": 3},
+    {"id": 4, "pet_id": 2, "start": "2026-10-15T10:00", "reason": "limping", "vet_id": 1},
+    {"id": 5, "pet_id": 1, "start": "2026-10-16T14:30", "reason": "follow-up", "vet_id": 1},
+    {"id": 6, "pet_id": 6, "start": "2026-10-14T09:30", "reason": "skin rash", "vet_id": 2},
+    {"id": 7, "pet_id": 5, "start": "2026-09-30T11:00", "reason": "ear infection"},
+    {"id": 8, "pet_id": 3, "start": "2026-10-22T10:30", "reason": "nail trim", "vet_id": 3}
+  ],
+  "vaccinations": [
+    {"pet_id": 1, "vaccine": "DHPP", "given": "2023-10-28"},
+    {"pet_id": 1, "vaccine": "Kennel cough", "given": "2025-10-30"},
+    {"pet_id": 2, "vaccine": "F3", "given": "2023-11-02"},
+    {"pet_id": 2, "vaccine": "FeLV", "given": "2026-03-10"},
+    {"pet_id": 3, "vaccine": "RHDV", "given": "2025-11-20"},
+    {"pet_id": 4, "vaccine": "F3", "given": "2026-10-14"},
+    {"pet_id": 4, "vaccine": "FeLV", "given": "2025-10-25"},
+    {"pet_id": 5, "vaccine": "DHPP", "given": "2024-02-01"},
+    {"pet_id": 5, "vaccine": "Kennel cough", "given": "2025-11-10"},
+    {"pet_id": 6, "vaccine": "F3", "given": "2025-05-05"},
+    {"pet_id": 6, "vaccine": "FeLV", "given": "2025-11-30"}
+  ],
+  "payments": [
+    {"id": 1, "visit_id": 1, "cents": 9775, "method": "eftpos", "paid": "2026-10-12T09:41"},
+    {"id": 2, "visit_id": 2, "cents": 9971, "method": "credit", "paid": "2026-10-13T12:10"},
+    {"id": 3, "visit_id": 6, "cents": 9042, "method": "cash", "paid": "2026-10-14T10:05"},
+    {"id": 4, "visit_id": 7, "cents": 5000, "method": "eftpos", "paid": "2026-10-02T15:00"}
+  ]
+}

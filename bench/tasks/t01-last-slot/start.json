@@ -1,0 +1,3 @@
+[
+  {"file": "petclinic/scheduling.py", "find": "    while start + SLOT <= end:", "replace": "    while start + SLOT < end:"}
+]

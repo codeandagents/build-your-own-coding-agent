@@ -1,0 +1,160 @@
+{
+  "fees": [
+    {
+      "code": "CONSULT",
+      "description": "Standard consultation",
+      "cents": 8500,
+      "kind": "consult"
+    },
+    {
+      "code": "FOLLOWUP",
+      "description": "Follow-up consultation",
+      "cents": 4245,
+      "kind": "consult"
+    },
+    {
+      "code": "AFTERHOURS",
+      "description": "After-hours consultation",
+      "cents": 16500,
+      "kind": "consult"
+    },
+    {
+      "code": "VAX",
+      "description": "Vaccination (per vaccine)",
+      "cents": 3850,
+      "kind": "procedure"
+    },
+    {
+      "code": "CHIP",
+      "description": "Microchip and registration",
+      "cents": 6900,
+      "kind": "procedure"
+    },
+    {
+      "code": "NAILS",
+      "description": "Nail trim",
+      "cents": 2500,
+      "kind": "procedure"
+    },
+    {
+      "code": "DENTAL",
+      "description": "Dental procedure",
+      "cents": 12000,
+      "kind": "procedure"
+    },
+    {
+      "code": "XRAY",
+      "description": "X-ray (per view)",
+      "cents": 14500,
+      "kind": "procedure"
+    },
+    {
+      "code": "BLOODS",
+      "description": "Blood panel",
+      "cents": 18900,
+      "kind": "procedure"
+    },
+    {
+      "code": "DESEX-C",
+      "description": "Desexing, cat",
+      "cents": 26500,
+      "kind": "procedure"
+    },
+    {
+      "code": "DESEX-D",
+      "description": "Desexing, dog (up to 20 kg)",
+      "cents": 48000,
+      "kind": "procedure"
+    },
+    {
+      "code": "MED-MELOX",
+      "description": "Meloxicam oral 10 ml",
+      "cents": 2380,
+      "kind": "medicine"
+    },
+    {
+      "code": "MED-AMOX",
+      "description": "Amoxicillin 250 mg tablets",
+      "cents": 120,
+      "kind": "medicine"
+    },
+    {
+      "code": "MED-CLAV",
+      "description": "Amoxyclav 500 mg tablets",
+      "cents": 260,
+      "kind": "medicine"
+    },
+    {
+      "code": "MED-GABA",
+      "description": "Gabapentin 100 mg capsules",
+      "cents": 140,
+      "kind": "medicine"
+    },
+    {
+      "code": "MED-PRED",
+      "description": "Prednisolone 5 mg tablets",
+      "cents": 60,
+      "kind": "medicine"
+    },
+    {
+      "code": "MED-OTIC",
+      "description": "Ear drops 15 ml",
+      "cents": 3120,
+      "kind": "medicine"
+    },
+    {
+      "code": "MED-EYE",
+      "description": "Eye ointment 5 g",
+      "cents": 2240,
+      "kind": "medicine"
+    },
+    {
+      "code": "MED-CHLOR",
+      "description": "Chloramphenicol eye drops 10 ml",
+      "cents": 2630,
+      "kind": "medicine"
+    },
+    {
+      "code": "MED-SILV",
+      "description": "Silver sulfadiazine cream 50 g",
+      "cents": 1890,
+      "kind": "medicine"
+    },
+    {
+      "code": "MED-FLEA-S",
+      "description": "Flea treatment, small dog",
+      "cents": 2860,
+      "kind": "medicine"
+    },
+    {
+      "code": "MED-FLEA-L",
+      "description": "Flea treatment, large dog",
+      "cents": 3480,
+      "kind": "medicine"
+    },
+    {
+      "code": "MED-FLEA-C",
+      "description": "Flea treatment, cat",
+      "cents": 2640,
+      "kind": "medicine"
+    },
+    {
+      "code": "MED-WORM",
+      "description": "Allwormer tablets",
+      "cents": 680,
+      "kind": "medicine"
+    },
+    {
+      "code": "SUP-CONE-S",
+      "description": "Recovery cone, small",
+      "cents": 1800,
+      "kind": "medicine"
+    },
+    {
+      "code": "SUP-CONE-L",
+      "description": "Recovery cone, large",
+      "cents": 2400,
+      "kind": "medicine"
+    }
+  ]
+}

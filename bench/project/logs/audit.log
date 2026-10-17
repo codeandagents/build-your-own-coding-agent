@@ -1,0 +1,126 @@
+2023-07-06 12:55:00  front desk   owner 1 added: 'Aroha Ngata' (021 555 0101)
+2023-07-06 12:58:00  front desk   pet 1 added: Kiwi (dog) for owner 1
+2023-07-06 13:01:00  front desk   pet 2 added: Pip (cat) for owner 1
+2023-08-17 11:40:00  front desk   owner 2 added: 'Ben Carter' (027 555 0199)
+2023-08-17 11:41:00  front desk   pet 3 added: Rocket (rabbit) for owner 2
+2023-09-15 09:31:00  front desk   owner 3 added: 'Mei Lin' (022-555-0142)
+2023-09-15 09:34:00  front desk   pet 4 added: Mochi (cat) for owner 3
+2023-11-06 15:47:00  front desk   owner 4 added: 'Leo Bishop' (022-555-0660)
+2023-11-06 15:49:00  front desk   pet 5 added: Hoki (dog) for owner 4
+2023-11-06 15:50:00  front desk   pet 6 added: Honey (dog) for owner 4
+2023-11-06 15:51:00  front desk   pet 7 added: Tui (dog) for owner 4
+2023-11-20 11:45:00  front desk   owner 5 added: 'Anahera Young' (021 555 0270)
+2023-11-20 11:48:00  front desk   pet 8 added: Rosie (bird) for owner 5
+2023-11-20 11:49:00  front desk   pet 9 added: Tui (cat) for owner 5
+2023-11-20 11:50:00  front desk   pet 10 added: Archie (dog) for owner 5
+2024-01-05 12:38:00  front desk   owner 6 added: 'Lena Chen' (027 555 0716)
+2024-01-05 12:39:00  front desk   pet 11 added: Sushi (cat) for owner 6
+2024-02-24 10:53:00  front desk   owner 7 added: 'Lena Kaur' (022 555 0223)
+2024-02-24 10:56:00  front desk   pet 12 added: Bailey (bird) for owner 7
+2024-02-24 10:59:00  front desk   pet 13 added: Pepper (cat) for owner 7
+2024-02-24 11:02:00  front desk   pet 14 added: Loki (dog) for owner 7
+2024-03-24 10:18:00  front desk   owner 8 added: 'Sam Wilson' (027 555 0621)
+2024-03-24 10:19:00  front desk   pet 15 added: Loki (cat) for owner 8
+2024-04-28 10:21:00  front desk   owner 9 added: 'Kauri Aumua' (021 555 0912)
+2024-04-28 10:22:00  front desk   pet 16 added: Marlo (dog) for owner 9
+2024-06-29 15:23:00  front desk   owner 10 added: 'Leo Parata' (022 555 0745)
+2024-06-29 15:25:00  front desk   pet 17 added: Marlo (dog) for owner 10
+2024-07-30 12:28:00  front desk   owner 11 added: 'Wiremu Robinson' (09 555 0457)
+2024-07-30 12:30:00  front desk   pet 18 added: Pickle (cat) for owner 11
+2024-07-30 12:31:00  front desk   pet 19 added: Bodhi (dog) for owner 11
+2024-07-30 12:34:00  front desk   pet 20 added: Coco (guinea pig) for owner 11
+2024-09-08 16:50:00  front desk   owner 12 added: 'Marco Wang' (09 555 0230)
+2024-09-08 16:53:00  front desk   pet 21 added: Kumara (dog) for owner 12
+2024-09-08 16:56:00  front desk   pet 22 added: Pippa (bird) for owner 12
+2024-10-06 11:43:00  front desk   owner 13 added: 'Amelia Baker' (022 555 0431)
+2024-10-06 11:44:00  front desk   pet 23 added: Nala (dog) for owner 13
+2024-10-06 11:45:00  front desk   pet 24 added: Biscuit (guinea pig) for owner 13
+2024-12-05 13:57:00  front desk   owner 14 added: 'Daniel Te Whata' (022 555 0763)
+2024-12-05 14:00:00  front desk   pet 25 added: Coco (cat) for owner 14
+2024-12-24 13:19:00  front desk   owner 15 added: 'Sophie Taylor' (027 555 0417)
+2024-12-24 13:20:00  front desk   pet 26 added: Teddy (guinea pig) for owner 15
+2025-02-15 10:50:00  front desk   owner 16 added: 'Isla Pomare' (022 555 0513)
+2025-02-15 10:52:00  front desk   pet 27 added: Ivy (cat) for owner 16
+2025-03-23 10:27:00  front desk   owner 17 added: 'Nikau Wilson' (022 555 0912)
+2025-03-23 10:29:00  front desk   pet 28 added: Teddy (cat) for owner 17
+2025-03-23 10:32:00  front desk   pet 29 added: Bodhi (rabbit) for owner 17
+2025-03-23 10:35:00  front desk   pet 30 added: Fig (cat) for owner 17
+2025-04-26 09:47:00  front desk   owner 18 added: 'Ruby Aumua' (027 555 0141)
+2025-04-26 09:48:00  front desk   pet 31 added: Fig (cat) for owner 18
+2025-04-26 09:50:00  front desk   pet 32 added: Olive (rabbit) for owner 18
+2025-06-04 10:38:00  front desk   owner 19 added: 'Sam Wilson' (027 555 0621)
+2025-06-04 10:41:00  front desk   pet 33 added: Poppy (cat) for owner 19
+2025-07-13 12:23:00  front desk   owner 20 added: 'Nikau Jones' (022-555-0804)
+2025-07-13 12:26:00  front desk   pet 34 added: Pickle (dog) for owner 20
+2025-09-16 10:37:00  front desk   owner 21 added: 'Daniel Wang' (09 555 0125)
+2025-09-16 10:38:00  front desk   pet 35 added: Basil (dog) for owner 21
+2025-09-16 10:41:00  front desk   pet 36 added: Hoki (guinea pig) for owner 21
+2025-10-22 12:25:00  front desk   owner 22 added: 'Te Ao Clarke' (022-555-0665)
+2025-10-22 12:28:00  front desk   pet 37 added: Tui (dog) for owner 22
+2025-10-22 12:31:00  front desk   pet 38 added: Olive (dog) for owner 22
+2025-11-24 12:25:00  front desk   owner 23 added: 'Mason Chen' (021-555-0768)
+2025-11-24 12:28:00  front desk   pet 39 added: Juno (rabbit) for owner 23
+2025-12-22 14:44:00  front desk   owner 24 added: 'Lily Kaur' (09 555 0946)
+2025-12-22 14:45:00  front desk   pet 40 added: Marlo (dog) for owner 24
+2025-12-22 14:47:00  front desk   pet 41 added: Luna (dog) for owner 24
+2026-03-02 17:41:09  archive      40 visits before 2019-03-01 archived
+2026-09-07 06:00:01  import       owner 25 added: 'Sione Harris' (022 555 0730)
+2026-09-07 06:00:01  import       owner 26 added: 'Leo Fischer' (027 555 0123)
+2026-09-07 06:00:01  import       owner 27 added: 'Chloe King' (021 555 0474)
+2026-09-07 06:00:01  import       owner 28 added: 'Keri Baker' (021 555 0138)
+2026-09-07 06:00:01  import       pet 42 added: Loki (cat) for owner 25
+2026-09-07 06:00:01  import       pet 43 added: Pepper (dog) for owner 25
+2026-09-07 06:00:01  import       pet 44 added: Molly (dog) for owner 25
+2026-09-07 06:00:01  import       pet 45 added: Frankie (dog) for owner 26
+2026-09-07 06:00:01  import       pet 46 added: Willow (bird) for owner 27
+2026-09-07 06:00:01  import       pet 47 added: Pickle (dog) for owner 27
+2026-09-07 06:00:01  import       pet 48 added: Marlo (rabbit) for owner 28
+2026-09-14 06:00:01  import       owner 29 added: 'Yuki Taylor' (027-555-0821)
+2026-09-14 06:00:01  import       owner 30 added: 'Grace Parata' (021 555 0844)
+2026-09-14 06:00:01  import       owner 31 added: 'Lily Ito' (09 555 0379)
+2026-09-14 06:00:01  import       owner 32 added: 'Noah Jones' (022 555 0976)
+2026-09-14 06:00:01  import       pet 49 added: Molly (dog) for owner 29
+2026-09-14 06:00:01  import       pet 50 added: Pepper (guinea pig) for owner 30
+2026-09-14 06:00:01  import       pet 51 added: Daisy (dog) for owner 30
+2026-09-14 06:00:01  import       pet 52 added: Pickle (cat) for owner 31
+2026-09-14 06:00:01  import       pet 53 added: Teddy (cat) for owner 31
+2026-09-14 06:00:01  import       pet 54 added: Marlo (cat) for owner 32
+2026-09-21 06:00:01  import       owner 33 added: 'Sophie Kaur' (022 555 0777)
+2026-09-21 06:00:01  import       owner 34 added: 'Charlotte Baker' (027-555-0384)
+2026-09-21 06:00:01  import       owner 35 added: 'Kauri Wright' (027 555 0316)
+2026-09-21 06:00:01  import       owner 36 added: 'Raj Harris' (021 555 0167)
+2026-09-21 06:00:01  import       pet 55 added: Pippa (cat) for owner 33
+2026-09-21 06:00:01  import       pet 56 added: Ted (dog) for owner 34
+2026-09-21 06:00:01  import       pet 57 added: Max (dog) for owner 34
+2026-09-21 06:00:01  import       pet 58 added: Scout (cat) for owner 35
+2026-09-21 06:00:01  import       pet 59 added: Juno (cat) for owner 35
+2026-09-21 06:00:01  import       pet 60 added: Jasper (cat) for owner 36
+2026-09-28 06:00:01  import       owner 37 added: 'Ethan Nguyen' (022 555 0667)
+2026-09-28 06:00:01  import       owner 38 added: 'Leo Wang' (027-555-0868)
+2026-09-28 06:00:01  import       owner 39 added: 'Holly Ferris' (027-555-0657)
+2026-09-28 06:00:01  import       owner 40 added: 'Sophie Tuilagi' (022-555-0589)
+2026-09-28 06:00:01  import       pet 61 added: Poppy (dog) for owner 37
+2026-09-28 06:00:01  import       pet 62 added: Winston (rabbit) for owner 37
+2026-09-28 06:00:01  import       pet 63 added: Ziggy (dog) for owner 38
+2026-09-28 06:00:01  import       pet 64 added: Charlie (cat) for owner 39
+2026-09-28 06:00:01  import       pet 65 added: Frankie (rabbit) for owner 40
+2026-09-28 06:00:01  import       pet 66 added: Molly (dog) for owner 40
+2026-10-05 06:00:01  import       owner 41 added: 'Mason Baker' (021 555 0317)
+2026-10-05 06:00:01  import       owner 42 added: 'Hemi Ward' (021-555-0527)
+2026-10-05 06:00:01  import       owner 43 added: 'Chloe Ward' (021 555 0529)
+2026-10-05 06:00:01  import       owner 44 added: 'Harper Clarke' (022 555 0567)
+2026-10-05 06:00:01  import       pet 67 added: Pippa (cat) for owner 41
+2026-10-05 06:00:01  import       pet 68 added: Kowhai (dog) for owner 41
+2026-10-05 06:00:01  import       pet 69 added: Ziggy (cat) for owner 42
+2026-10-05 06:00:01  import       pet 70 added: Poppy (dog) for owner 42
+2026-10-05 06:00:01  import       pet 71 added: Max (dog) for owner 42
+2026-10-05 06:00:01  import       pet 72 added: Loki (dog) for owner 43
+2026-10-05 06:00:01  import       pet 73 added: Murphy (dog) for owner 44
+2026-10-12 06:00:01  import       owner 45 added: 'Rangi Harris' (027-555-0161)
+2026-10-12 06:00:01  import       owner 46 added: 'Ruby Fischer' (021 555 0478)
+2026-10-12 06:00:01  import       owner 47 added: 'Tom Te Whata' (021 555 0622)
+2026-10-12 06:00:01  import       owner 48 added: 'Kauri Parata' (021 555 0575)
+2026-10-12 06:00:01  import       pet 74 added: Pepper (cat) for owner 45
+2026-10-12 06:00:01  import       pet 75 added: Winston (rabbit) for owner 46
+2026-10-12 06:00:01  import       pet 76 added: Charlie (cat) for owner 47
+2026-10-12 06:00:01  import       pet 77 added: Max (dog) for owner 48

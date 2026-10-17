@@ -1,0 +1,10 @@
+2026-09-07 06:00:01,035 INFO petclinic.importer: row 2: Loki (cat) for Sione Harris
+2026-09-07 06:00:01,072 INFO petclinic.importer: row 3: Pepper (dog) for Sione Harris
+2026-09-07 06:00:01,082 INFO petclinic.importer: row 4: Molly (dog) for Sione Harris
+2026-09-07 06:00:01,099 INFO petclinic.importer: row 5: Frankie (dog) for Leo Fischer
+2026-09-07 06:00:01,105 INFO petclinic.importer: row 6: Willow (bird) for Chloe King
+2026-09-07 06:00:01,125 INFO petclinic.importer: row 7: Pickle (dog) for Chloe King
+2026-09-07 06:00:01,144 INFO petclinic.importer: row 8: Marlo (rabbit) for Keri Baker
+2026-09-07 06:00:01,183 INFO petclinic.importer: row 9: Pickle already on file
+2026-09-07 06:00:01,197 INFO petclinic.importer: row 10: Teddy already on file
+2026-09-07 06:00:01,202 INFO petclinic.importer: import finished: 4 owners and 7 pets added, 0 rows skipped

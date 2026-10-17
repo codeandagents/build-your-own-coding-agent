@@ -1,0 +1,9 @@
+2026-09-28 06:00:01,039 INFO petclinic.importer: row 2: Poppy (dog) for Ethan Nguyen
+2026-09-28 06:00:01,045 INFO petclinic.importer: row 3: Winston (rabbit) for Ethan Nguyen
+2026-09-28 06:00:01,053 INFO petclinic.importer: row 4: Ziggy (dog) for Leo Wang
+2026-09-28 06:00:01,085 INFO petclinic.importer: row 5: Charlie (cat) for Holly Ferris
+2026-09-28 06:00:01,121 INFO petclinic.importer: row 6: Frankie (rabbit) for Sophie Tuilagi
+2026-09-28 06:00:01,138 INFO petclinic.importer: row 7: Molly (dog) for Sophie Tuilagi
+2026-09-28 06:00:01,171 INFO petclinic.importer: row 8: Juno already on file
+2026-09-28 06:00:01,205 INFO petclinic.importer: row 9: Bailey already on file
+2026-09-28 06:00:01,210 INFO petclinic.importer: import finished: 4 owners and 6 pets added, 0 rows skipped

@@ -1,0 +1,9 @@
+2026-10-19 06:00:01,050 INFO petclinic.importer: row 2: Toby (dog) for Mere Ruakere
+2026-10-19 06:00:01,066 INFO petclinic.importer: row 3: Mochi (cat) for mei lin
+2026-10-19 06:00:01,085 INFO petclinic.importer: row 4: Kiwi (dog) for AROHA NGATA
+2026-10-19 06:00:01,107 INFO petclinic.importer: row 5: Pip (cat) for AROHA NGATA
+2026-10-19 06:00:01,132 INFO petclinic.importer: row 6: Nugget (guinea pig) for Josh Tamati
+2026-10-19 06:00:01,160 INFO petclinic.importer: row 7: Coco (cat) for Daniel  Te Whata
+2026-10-19 06:00:01,191 INFO petclinic.importer: row 8: Sushi (cat) for LENA CHEN
+2026-10-19 06:00:01,225 INFO petclinic.importer: row 9: Pickle (dog) for nikau jones
+2026-10-19 06:00:01,229 INFO petclinic.importer: import finished: 7 owners and 8 pets added, 0 rows skipped

@@ -1,0 +1,9 @@
+2026-09-21 06:00:01,038 INFO petclinic.importer: row 2: Pippa (cat) for Sophie Kaur
+2026-09-21 06:00:01,047 INFO petclinic.importer: row 3: Ted (dog) for Charlotte Baker
+2026-09-21 06:00:01,060 INFO petclinic.importer: row 4: Max (dog) for Charlotte Baker
+2026-09-21 06:00:01,068 INFO petclinic.importer: row 5: Scout (cat) for Kauri Wright
+2026-09-21 06:00:01,073 INFO petclinic.importer: row 6: Juno (cat) for Kauri Wright
+2026-09-21 06:00:01,112 INFO petclinic.importer: row 7: Jasper (cat) for Raj Harris
+2026-09-21 06:00:01,117 INFO petclinic.importer: row 8: Bailey already on file
+2026-09-21 06:00:01,141 INFO petclinic.importer: row 9: Basil already on file
+2026-09-21 06:00:01,146 INFO petclinic.importer: import finished: 4 owners and 6 pets added, 0 rows skipped

@@ -1,0 +1,5 @@
+[
+  {"file": "petclinic/scheduling.py", "find": "    return now.astimezone(CLINIC_TZ).date()\n", "replace": "    return now.date()\n"},
+  {"file": "petclinic/scheduling.py", "find": "    now = (now or datetime.now(CLINIC_TZ)).astimezone(CLINIC_TZ)\n",
+   "replace": "    now = now or datetime.now(CLINIC_TZ)\n"}
+]

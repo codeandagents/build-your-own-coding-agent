@@ -1,0 +1,10 @@
+[
+  {"file": "petclinic/store.py", "find": "from .scheduling import slots_for_day\n",
+   "replace": "from .scheduling import clinic_today, slots_for_day\n"},
+  {"file": "petclinic/store.py",
+   "find": "        if microchip and not (microchip.isdigit() and len(microchip) == 15):\n",
+   "replace": "        if birth_date > clinic_today():\n            raise ValidationError(\"birth_date: must not be in the future\")\n        if microchip and not (microchip.isdigit() and len(microchip) == 15):\n"},
+  {"file": "petclinic/importer.py",
+   "find": "            pet = store.add_pet(owner.id, row[\"pet_name\"], species, born)\n",
+   "replace": "            try:\n                pet = store.add_pet(owner.id, row[\"pet_name\"], species, born)\n            except ValidationError as e:\n                log.warning(\"row %d: %s (skipped)\", row_number, e)\n                result.skipped += 1\n                continue\n"}
+]

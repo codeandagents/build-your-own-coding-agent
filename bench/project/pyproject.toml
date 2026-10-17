@@ -1,0 +1,9 @@
+[project]
+name = "petclinic-lite"
+version = "3.4.0"
+description = "The front-desk app of Harbourside Vets, a vet clinic in Auckland."
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

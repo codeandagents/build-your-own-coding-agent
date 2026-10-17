@@ -1,0 +1,7 @@
+2026-10-12 06:00:01,026 INFO petclinic.importer: row 2: Pepper (cat) for Rangi Harris
+2026-10-12 06:00:01,052 INFO petclinic.importer: row 3: Winston (rabbit) for Ruby Fischer
+2026-10-12 06:00:01,083 INFO petclinic.importer: row 4: Charlie (cat) for Tom Te Whata
+2026-10-12 06:00:01,099 INFO petclinic.importer: row 5: Max (dog) for Kauri Parata
+2026-10-12 06:00:01,109 INFO petclinic.importer: row 6: Teddy already on file
+2026-10-12 06:00:01,116 INFO petclinic.importer: row 7: Pickle already on file
+2026-10-12 06:00:01,121 INFO petclinic.importer: import finished: 4 owners and 4 pets added, 0 rows skipped

@@ -1,0 +1,37 @@
+[
+ {
+  "file": "petclinic/inventory.py",
+  "find": "from dataclasses import dataclass, field\n",
+  "replace": "from dataclasses import dataclass, field\nfrom fractions import Fraction\n"
+ },
+ {
+  "file": "petclinic/inventory.py",
+  "find": "    def total(self) -> int:\n        return sum(b.quantity for b in self.batches)\n",
+  "replace": "    def total(self) -> int:\n        return sum(b.quantity for b in self.batches)\n\n    def usable(self, on: date) -> int:\n        \"\"\"Units neither expired on `on` (a batch is still usable on its expiry date) nor recalled.\"\"\"\n        return sum(b.quantity for b in self.batches\n                   if not b.recalled and (b.expiry is None or b.expiry >= on))\n\n    def to_order(self, on: date) -> int:\n        \"\"\"Units to order: up to twice the reorder level with what's on order, in whole packs.\"\"\"\n        need = max(0, 2 * self.reorder_level - self.usable(on) - self.on_order)\n        return -(-need // self.pack_size) * self.pack_size\n"
+ },
+ {
+  "file": "petclinic/inventory.py",
+  "find": "def load_stock(path: str | Path) -> dict[str, StockItem]:\n",
+  "replace": "def to_reorder(items, on: date, location: str | None = None) -> list[StockItem]:\n    \"\"\"Items to reorder, the smallest share of their reorder level left first.\"\"\"\n    location = location.lower() if location is not None else None\n    if location is not None and location not in LOCATIONS:\n        raise ValidationError(f\"location: one of {', '.join(LOCATIONS)}\")\n    low = [item for item in items if not item.discontinued and (location is None or item.location == location)\n           and item.usable(on) <= item.reorder_level and item.usable(on) + item.on_order <= item.reorder_level]\n    return sorted(low, key=lambda item: (Fraction(item.usable(on), item.reorder_level), item.code))\n\n\ndef load_stock(path: str | Path) -> dict[str, StockItem]:\n"
+ },
+ {
+  "file": "petclinic/cli.py",
+  "find": "import argparse\n",
+  "replace": "import argparse\nimport json\n"
+ },
+ {
+  "file": "petclinic/cli.py",
+  "find": "from .importer import import_csv\n",
+  "replace": "from .importer import import_csv\nfrom .inventory import load_stock, to_reorder\n"
+ },
+ {
+  "file": "petclinic/cli.py",
+  "find": "    # staff\n",
+  "replace": "    # stock\n    stock = commands.add_parser(\"stock\", help=\"stock to reorder\")\n    stock.add_argument(\"--stock\", default=settings.STOCK_FILE)\n    stock.add_argument(\"--on\", type=date.fromisoformat, help=\"YYYY-MM-DD (default: today)\")\n    stock.add_argument(\"--location\", help=\"pharmacy, surgery or front desk\")\n    stock.add_argument(\"--json\", action=\"store_true\", help=\"print the items as JSON\")\n\n    # staff\n"
+ },
+ {
+  "file": "petclinic/cli.py",
+  "find": "    elif command == \"rota\":\n",
+  "replace": "    elif command == \"stock\":\n        on = args.on or clinic_today()\n        low = to_reorder(load_stock(args.stock).values(), on, args.location)\n        if args.json:\n            print(json.dumps([{\"code\": i.code, \"name\": i.name, \"location\": i.location, \"usable\": i.usable(on),\n                               \"reorder_level\": i.reorder_level, \"on_order\": i.on_order,\n                               \"order\": i.to_order(on)} for i in low], indent=2))\n        elif not low:\n            print(\"All stock levels OK.\")\n        else:\n            for i in low:\n                ordered = f\"  ({i.on_order} on order)\" if i.on_order else \"\"\n                print(f\"{i.code:12}  {i.name:34}  {i.usable(on):>4} usable (reorder at {i.reorder_level}), order {i.to_order(on)}{ordered}\")\n    elif command == \"rota\":\n"
+ }
+]

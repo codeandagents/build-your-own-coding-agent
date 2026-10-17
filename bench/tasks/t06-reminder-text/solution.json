@@ -1,0 +1,5 @@
+[
+  {"file": "petclinic/messages.py",
+   "find": "VACCINE_DUE_SMS = Template(\"Kia ora $owner! $pets $verb due for $vaccines on $date. \"\n                           \"Book online or call $clinic on $phone.\")\n",
+   "replace": "VACCINE_DUE_SMS = Template(\"Kia ora $owner! $pets $verb due for $vaccines on $date. It's quick to book: \"\n                           \"reply \\\"BOOK\\\" & we'll call you, or call $clinic on $phone. Txt STOP to opt out.\")\n"}
+]

@@ -1,0 +1,62 @@
+[
+ {
+  "file": "petclinic/store.py",
+  "find": "        self.payments: dict[int, Payment] = {}\n",
+  "replace": "        self.payments: dict[int, Payment] = {}\n        self._by_pet: dict[int, dict[int, Visit]] = {}  # pet id -> {visit id: visit}\n        self._by_day: dict[date, dict[int, Visit]] = {}  # day -> {visit id: visit}\n        self._top_visit = 0                              # the highest visit id\n"
+ },
+ {
+  "file": "petclinic/store.py",
+  "find": "        visit = Visit(self._next_id(self.visits), pet_id, start, reason.strip(), vet_id)\n        self.visits[visit.id] = visit\n        return visit\n",
+  "replace": "        visit = Visit(self._next_visit_id(), pet_id, start, reason.strip(), vet_id)\n        self.add_visit(visit)\n        return visit\n\n    def add_visit(self, visit: Visit) -> None:\n        \"\"\"Put a visit in the store as it is (loading, restoring from the archive).\"\"\"\n        self.visits[visit.id] = visit\n        self._by_pet.setdefault(visit.pet_id, {})[visit.id] = visit\n        self._by_day.setdefault(visit.start.date(), {})[visit.id] = visit\n        self._top_visit = max(self._top_visit, visit.id)\n\n    def remove_visit(self, visit_id: int) -> Visit:\n        visit = self.visits.pop(visit_id)\n        del self._by_pet[visit.pet_id][visit_id]\n        del self._by_day[visit.start.date()][visit_id]\n        return visit\n\n    def _next_visit_id(self) -> int:\n        \"\"\"The highest id plus one, as _next_id gives, without scanning every visit.\"\"\"\n        if self._top_visit not in self.visits:  # the newest visit went: find the new newest\n            self._top_visit = max(self.visits, default=0)\n        return self._top_visit + 1\n\n    def move_visit(self, visit_id: int, pet_id: int) -> None:\n        \"\"\"Give a visit to another pet (merging duplicates).\"\"\"\n        visit = self.remove_visit(visit_id)\n        visit.pet_id = pet_id\n        self.add_visit(visit)\n"
+ },
+ {
+  "file": "petclinic/store.py",
+  "find": "        return self.visits.pop(visit_id)\n",
+  "replace": "        return self.remove_visit(visit_id)\n"
+ },
+ {
+  "file": "petclinic/store.py",
+  "find": "        for visit_id in gone:\n            del self.visits[visit_id]\n",
+  "replace": "        for visit_id in gone:\n            self.remove_visit(visit_id)\n"
+ },
+ {
+  "file": "petclinic/store.py",
+  "find": "        return sorted((v for v in self.visits.values() if v.pet_id == pet_id), key=lambda v: v.start)\n",
+  "replace": "        return sorted(self._by_pet.get(pet_id, {}).values(), key=lambda v: v.start)\n"
+ },
+ {
+  "file": "petclinic/store.py",
+  "find": "            store.visits[v[\"id\"]] = Visit(**{**v, \"start\": datetime.fromisoformat(v[\"start\"])})\n",
+  "replace": "            store.add_visit(Visit(**{**v, \"start\": datetime.fromisoformat(v[\"start\"])}))\n"
+ },
+ {
+  "file": "petclinic/admin.py",
+  "find": "    for visit in store.visits.values():\n        if visit.pet_id == duplicate_id:\n            visit.pet_id = keep_id\n",
+  "replace": "    for visit in list(store.visits.values()):\n        if visit.pet_id == duplicate_id:\n            store.move_visit(visit.id, keep_id)\n"
+ },
+ {
+  "file": "petclinic/archive.py",
+  "find": "        del store.visits[visit.id]\n",
+  "replace": "        store.remove_visit(visit.id)\n"
+ },
+ {
+  "file": "petclinic/archive.py",
+  "find": "        store.visits[visit.id] = visit\n",
+  "replace": "        store.add_visit(visit)\n"
+ },
+ {
+  "file": "petclinic/store.py",
+  "find": "        self._check_free(start)\n        self.visits[visit_id].start = start\n        return self.visits[visit_id]\n",
+  "replace": "        self._check_free(start)\n        visit = self.remove_visit(visit_id)\n        visit.start = start\n        self.add_visit(visit)\n        return visit\n"
+ },
+ {
+  "file": "petclinic/store.py",
+  "find": "        taken = [v.start for v in self.visits.values() if v.start.date() == start.date()]\n",
+  "replace": "        taken = [v.start for v in self._by_day.get(start.date(), {}).values()]\n"
+ },
+ {
+  "file": "petclinic/store.py",
+  "find": "        return sorted((v for v in self.visits.values() if v.start.date() == day), key=lambda v: v.start)\n",
+  "replace": "        return sorted(self._by_day.get(day, {}).values(), key=lambda v: v.start)\n"
+ }
+]

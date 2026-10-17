@@ -1,0 +1,48 @@
+{
+  "vets": [
+    {
+      "id": 1,
+      "name": "Dr Priya Patel"
+    },
+    {
+      "id": 2,
+      "name": "Dr Sam Walker"
+    },
+    {
+      "id": 3,
+      "name": "Dr Hine Tane"
+    }
+  ],
+  "leave": [
+    {
+      "vet_id": 2,
+      "first_day": "2026-04-07",
+      "last_day": "2026-04-17",
+      "note": "school holidays"
+    },
+    {
+      "vet_id": 3,
+      "first_day": "2026-07-06",
+      "last_day": "2026-07-17",
+      "note": "school holidays"
+    },
+    {
+      "vet_id": 1,
+      "first_day": "2026-11-02",
+      "last_day": "2026-11-06",
+      "note": "conference, Wellington"
+    },
+    {
+      "vet_id": 2,
+      "first_day": "2026-12-21",
+      "last_day": "2027-01-08",
+      "note": "summer leave"
+    },
+    {
+      "vet_id": 3,
+      "first_day": "2027-01-11",
+      "last_day": "2027-01-22",
+      "note": "summer leave"
+    }
+  ]
+}

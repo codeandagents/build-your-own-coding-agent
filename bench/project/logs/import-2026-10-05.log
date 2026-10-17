@@ -1,0 +1,10 @@
+2026-10-05 06:00:01,034 INFO petclinic.importer: row 2: Pippa (cat) for Mason Baker
+2026-10-05 06:00:01,073 INFO petclinic.importer: row 3: Kowhai (dog) for Mason Baker
+2026-10-05 06:00:01,088 INFO petclinic.importer: row 4: Ziggy (cat) for Hemi Ward
+2026-10-05 06:00:01,103 INFO petclinic.importer: row 5: Poppy (dog) for Hemi Ward
+2026-10-05 06:00:01,107 INFO petclinic.importer: row 6: Max (dog) for Hemi Ward
+2026-10-05 06:00:01,118 INFO petclinic.importer: row 7: Loki (dog) for Chloe Ward
+2026-10-05 06:00:01,154 INFO petclinic.importer: row 8: Murphy (dog) for Harper Clarke
+2026-10-05 06:00:01,164 INFO petclinic.importer: row 9: Tui already on file
+2026-10-05 06:00:01,186 INFO petclinic.importer: row 10: Fig already on file
+2026-10-05 06:00:01,191 INFO petclinic.importer: import finished: 4 owners and 7 pets added, 0 rows skipped

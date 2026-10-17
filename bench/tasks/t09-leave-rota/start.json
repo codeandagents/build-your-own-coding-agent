@@ -1,0 +1,6 @@
+[
+  {"file": "petclinic/staff.py", "find": "        vet_id = int(x[\"vet_id\"])  # the spreadsheet's export writes some ids as text\n",
+   "replace": "        vet_id = x[\"vet_id\"]\n"},
+  {"file": "petclinic/staff.py", "find": "        leave.append(Leave(vet_id, Period.inclusive(first, last), x.get(\"note\", \"\")))\n",
+   "replace": "        leave.append(Leave(vet_id, Period(first, last), x.get(\"note\", \"\")))\n"}
+]

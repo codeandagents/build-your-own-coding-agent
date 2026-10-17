@@ -1,0 +1,9 @@
+[
+  {"file": "petclinic/cli.py", "find": "import argparse\n", "replace": "import argparse\nimport json\n"},
+  {"file": "petclinic/cli.py",
+   "find": "    report.add_argument(\"--until\", type=date.fromisoformat, help=\"YYYY-MM-DD, not included (default: no end)\")\n",
+   "replace": "    report.add_argument(\"--until\", type=date.fromisoformat, help=\"YYYY-MM-DD, not included (default: no end)\")\n    report.add_argument(\"--json\", action=\"store_true\", help=\"print the rows as JSON\")\n"},
+  {"file": "petclinic/cli.py",
+   "find": "        print(format_table(visit_rows(store, since, args.until)))\n",
+   "replace": "        rows = visit_rows(store, since, args.until)\n        print(json.dumps(rows, indent=2) if args.json else format_table(rows))\n"}
+]

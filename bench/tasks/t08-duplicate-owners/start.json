@@ -1,0 +1,4 @@
+[
+  {"file": "petclinic/importer.py", "find": "    return next((o for o in store.owners.values() if same_name(o.name, name)), None)\n",
+   "replace": "    return next((o for o in store.owners.values() if o.name == name), None)\n"}
+]
