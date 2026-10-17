@@ -21,7 +21,10 @@ RANGE = {"offset": {"type": "integer", "description": "The first line to read (1
 TOOLS = [{
     "name": "bash",
     "description": ("Run a shell command in the project directory and get its output (stdout and stderr). "
-                    "Use it to look around and run the tests; read and edit files with the file tools. "
+                    "Use it to look around and run the tests. "
+                    # Claude Code's Bash tool steers the same way: without this sentence, 95% of the work stayed in bash
+                    "Don't use it to read or change files: read with read_file (not cat, head, tail or sed -n), edit "
+                    "with edit_file (not sed -i or scripts) and create files with write_file (not echo or cat <<EOF). "
                     "Each command runs in a fresh shell and times out after 60 seconds."),
     "input_schema": schema({"command": {"type": "string", "description": "The command to run."}}),
 }, {

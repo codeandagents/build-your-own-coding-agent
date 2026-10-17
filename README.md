@@ -11,7 +11,7 @@ Not affiliated with Anthropic. "Claude Code" describes the kind of tool built he
 | Tag | Episode | What the harness has |
 |---|---|---|
 | [`ep01`](../../tree/ep01) | 1. A coding agent is a loop | the agent loop and one tool, `bash`; the benchmark and its baseline |
-| [`ep02-tools-only`](../../tree/ep02-tools-only) | 2. Claude Code's tools, step 1 | `read_file`, `write_file`, `edit_file` next to `bash`, modelled on Claude Code's Read, Write and Edit |
+| [`ep02-steer`](../../tree/ep02-steer) | 2. Claude Code's tools, step 2 | `read_file`, `write_file`, `edit_file` next to `bash`, modelled on Claude Code's Read, Write and Edit, and bash's description steering file work to them ([`ep02-tools-only`](../../tree/ep02-tools-only): the tools without that sentence) |
 
 ## What's in it
 
@@ -23,7 +23,8 @@ bench/project/      PetClinic Lite, the app the agent works on (a vet clinic in 
 bench/tasks/        15 tasks; each has a prompt (task.md) and hidden tests (check/), added only to score it
 bench/run.py        run the agent on the tasks and score it
 bench/board.py      print a run's scoreboard
-results/            the scoreboards the videos show (ep01.jsonl = the episode-1 baseline, ep02-tools-only.jsonl = with file tools)
+results/            the scoreboards the videos show (ep01.jsonl = the episode-1 baseline; ep02-tools-only.jsonl and
+                    ep02-steer.jsonl = episode 2's file tools without and with the steering sentence)
 ```
 
 ## Run it
@@ -35,7 +36,7 @@ You need [uv](https://docs.astral.sh/uv/) and Python 3.12 or newer. On Windows, 
 uv sync
 uv run pytest -q                          # the harness's own tests: offline, no key needed
 uv run python -m bench.selfcheck          # every task is fair: tests pass at the start, the hidden check fails
-uv run python -m bench.board results/ep02-tools-only.jsonl   # an episode's scoreboard, no key needed
+uv run python -m bench.board results/ep02-steer.jsonl   # an episode's scoreboard, no key needed
 ```
 
 With an Anthropic API key (`BYOCA_API_KEY`, or the usual `ANTHROPIC_API_KEY`):
@@ -53,7 +54,7 @@ the same shape on any provider whose API has tool calling; this code talks to An
 
 ## What it costs
 
-On 2026-10-17, the whole benchmark (15 tasks, 3 tries) cost $0.34 with episode 2's harness, about $0.0075 a try. Prices change
+On 2026-10-17, the whole benchmark (15 tasks, 3 tries) cost $0.32 with episode 2's harness, about $0.007 a try. Prices change
 with every model release: check your provider's pricing page. The guards in `agent/llm.py`:
 - a total budget (`budget_usd` in `.runs/config.json`, default $5) and a cap per run (`--run-budget`, default $0.50),
   both checked before every request;
