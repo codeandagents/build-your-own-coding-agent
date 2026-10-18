@@ -13,6 +13,9 @@ Not affiliated with Anthropic. "Claude Code" describes the kind of tool built he
 | [`ep01`](../../tree/ep01) | 1. A coding agent is a loop | the agent loop and one tool, `bash`; the benchmark and its baseline |
 | [`ep02`](../../tree/ep02) | 2. Claude Code's tools | `read_file`, `write_file`, `edit_file`, `search_files` (a regex search: the files that match by default, or their lines, or counts) and `find_files` (files that match a glob) next to `bash`, modelled on Claude Code's Read, Write, Edit, Grep and Glob, and bash's description steering file work and searches to them. Its steps: [`ep02-tools-only`](../../tree/ep02-tools-only) (the file tools alone), [`ep02-steer`](../../tree/ep02-steer) (plus the steering sentence), [`ep02-search-lines`](../../tree/ep02-search-lines) (plus a search that always printed the matching lines) |
 
+Each episode's follow-along notes (every command the video runs, and what to look for) are in
+[`docs/follow-along/`](docs/follow-along/).
+
 ## What's in it
 
 ```
