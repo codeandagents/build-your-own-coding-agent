@@ -1,5 +1,6 @@
 """The tools the model can call: a shell (episode 1), file tools modelled on Claude Code's Read, Write and Edit
-(episode 2), and search tools modelled on its Grep and Glob (episode 2 too)."""
+(episode 2), search tools modelled on its Grep and Glob (episode 2 too), and Claude Code's limits on how much of a
+tool's output reaches the model (episode 3: the context budget)."""
 import os
 import re
 import signal
@@ -27,12 +28,15 @@ TOOLS = [{
                     "Don't use it to search, read or change files: search file contents with search_files (not grep "
                     "or rg), find files by name with find_files (not find or ls), read with read_file (not cat, head, "
                     "tail or sed -n), edit with edit_file (not sed -i or scripts) and create files with write_file "
-                    "(not echo or cat <<EOF). Each command runs in a fresh shell and times out after 60 seconds."),
+                    "(not echo or cat <<EOF). Each command runs in a fresh shell and times out after 60 seconds. "
+                    "Output over 30,000 characters is saved to a file: you get its path and the first 2,000 "
+                    "characters."),
     "input_schema": schema({"command": {"type": "string", "description": "The command to run."}}),
 }, {
     "name": "read_file",
-    "description": ("Read a text file, with line numbers. Reads up to 2000 lines from the start; "
-                    "read a long file in ranges with offset and limit."),
+    "description": ("Read a text file, with line numbers: up to 2000 lines or 40,000 characters. A longer file "
+                    "comes back as its first page, with a note on how to read on with offset and limit; a whole file "
+                    "over 256 KB is refused (read a part, or search it)."),
     "input_schema": schema(PATH, RANGE),
 }, {
     "name": "write_file",
@@ -48,11 +52,13 @@ TOOLS = [{
     "name": "search_files",
     "description": ("Search file contents for a regular expression (Python syntax). output_mode: files_with_matches "
                     "(the default) lists the files that match, content shows the matching lines as path:line:text "
-                    "(context: lines around each), count gives the matches per file; up to 100 results. Narrow it "
-                    "with path (a folder or one file) and glob (which files: **/*.py; !tickets/** leaves them out)."),
+                    "(context: lines around each), count gives the matches per file; up to 100 results, and offset "
+                    "skips that many (the next page). Narrow it with path (a folder or one file) and glob (which "
+                    "files: **/*.py; !tickets/** leaves them out)."),
     "input_schema": schema({"pattern": TEXT}, {"path": TEXT, "glob": TEXT,
                                                "output_mode": {"type": "string", "enum": list(MODES)},
-                                               "ignore_case": {"type": "boolean"}, "context": {"type": "integer"}}),
+                                               "ignore_case": {"type": "boolean"}, "context": {"type": "integer"},
+                                               "offset": {"type": "integer"}}),
 }, {
     "name": "find_files",
     "description": ("Find files by name with a glob pattern: **/*.py (any depth), docs/*.md, *.{json,csv}. Returns "
@@ -64,7 +70,15 @@ READ_LIMIT = 2000  # lines per read_file call, as in Claude Code's Read
 SEARCH_LIMIT = 100  # matches per search, files per find: the rest are counted, not shown
 HIDDEN = re.compile(r"(^|/)(\.|__pycache__/)")  # .git, .pytest_cache, .env: not searched unless named as the path
 TIMEOUT_S = 60
-MAX_OUTPUT = 20_000  # characters: a guard against one command filling the context (episode 5 does it properly)
+# The context budget (episode 3): Claude Code's limits (code.claude.com/docs/en/tools-reference, read 2026-10-18).
+INLINE_MAX = 30_000     # characters of a result the model gets as is; a longer one is saved to a file
+PREVIEW = 2_000         # ... and the model gets the file's path and this much of its start
+FAILED_MAX = 10_000     # a failed command's output: its start and its end, this much in all, no file
+PAGE_MAX = 40_000       # characters per read_file call: Claude Code's 25,000 tokens are an eighth of its 200k window;
+                        # an eighth of our 80k ceiling (loop.PROMPT_CEILING) is 10,000 tokens, about 40,000 characters
+WHOLE_MAX = 256 * 1024  # bytes: a whole file larger than this is refused (read a part, or search it), as in Claude Code
+SAVED = ".outputs"      # long results go here, inside the project, where the file tools can read them
+BENIGN = re.compile(r"(grep|rg|egrep|fgrep|find|diff|test|git\s+(diff|grep))\b|\[\s")  # exit 1 isn't a failure
 # Placeholders until episode 4 builds a real sandbox: refuse the obviously dangerous, and keep the agent off the rest
 # of the machine (in the first baseline, 2026-10-16, Haiku ran `cd ~` and then `find /` when it felt lost).
 ROOT = r"(/|/[a-zA-Z]|[a-zA-Z]:[\\/]?)(?=$|[\s;&|)])"  # a filesystem or drive root: / /c C:\ C:
@@ -106,7 +120,8 @@ def run_tool(name: str, args: dict, cwd: Path) -> tuple[str, bool]:
     if name not in FILE_TOOLS:
         return f"Unknown tool: {name}", True
     try:
-        return FILE_TOOLS[name](cwd, **args) or "(no output)", False
+        output = FILE_TOOLS[name](cwd, **args) or "(no output)"
+        return (output if name == "read_file" else fit(output, cwd, name)), False  # read_file pages itself
     except (OSError, ValueError, TypeError, re.error) as e:  # a refused edit, a missing file, a wrong argument or regex
         return f"Bad pattern: {e}" if isinstance(e, re.error) else str(e), True
 
@@ -121,10 +136,25 @@ def describe(name: str, args: dict) -> str:
     return f"> {name}({', '.join([str(args.get(first, ''))] + options)})"
 
 
-def cut(output: str) -> str:
-    if len(output) <= MAX_OUTPUT:
+def fit(output: str, cwd: Path, tool: str) -> str:
+    """A result too long for the context goes to a file in the project, and the model gets its path and its start:
+    Claude Code's way. It reads on with read_file or search_files."""
+    if len(output) <= INLINE_MAX:
         return output
-    return output[:MAX_OUTPUT] + f"\n[... {len(output) - MAX_OUTPUT} more characters cut]"
+    folder = cwd / SAVED
+    folder.mkdir(exist_ok=True)
+    name = f"{SAVED}/{tool}-{len(list(folder.iterdir())) + 1:03}.txt"
+    (cwd / name).write_text(output, encoding="utf-8", newline="")
+    return (f"Output too large ({len(output.encode()) / 1024:.1f}KB). Full output saved to: {name}\n\n"
+            f"Preview (first 2KB):\n{output[:PREVIEW]}\n...")
+
+
+def ends(output: str) -> str:
+    """A failed command's output: its start and its end (the error is often at the end), as in Claude Code."""
+    if len(output) <= FAILED_MAX:
+        return output
+    half = FAILED_MAX // 2
+    return f"{output[:half]}\n[... {len(output) - 2 * half} characters cut from the middle ...]\n{output[-half:]}"
 
 
 def bash(command: str, cwd: Path) -> tuple[str, bool]:
@@ -134,7 +164,9 @@ def bash(command: str, cwd: Path) -> tuple[str, bool]:
         returncode, output = run_shell(command, cwd)
     except subprocess.TimeoutExpired:
         return f"Timed out after {TIMEOUT_S} s", True
-    output = cut(output)
+    last = re.split(r"\|\||&&|[|;\n]", command.strip())[-1].strip()  # whose exit code the shell returns
+    failed = returncode != 0 and not (returncode == 1 and BENIGN.match(last))  # grep: exit 1 = no match
+    output = ends(output) if failed else fit(output, cwd, "bash")
     if returncode:
         output += f"\n[exit code {returncode}]"
     return output or "(no output)", False
@@ -161,14 +193,38 @@ def read_text(full: Path, path: str) -> str:
         return f.read()
 
 
-def read_file(cwd: Path, path: str, offset: int = 1, limit: int = READ_LIMIT) -> str:
-    text = read_text(resolve(cwd, path), path)
+def read_file(cwd: Path, path: str, offset: int | None = None, limit: int | None = None) -> str:
+    """Up to READ_LIMIT lines and PAGE_MAX characters. A whole file that's longer comes back as its first page with
+    Claude Code's PARTIAL notice; a range that's longer is refused, saying how many lines fit."""
+    full, whole = resolve(cwd, path), offset is None and limit is None
+    if whole and full.is_file() and full.stat().st_size > WHOLE_MAX:
+        raise ValueError(f"{path} is {full.stat().st_size / 1024:.1f} KB, more than a whole read allows "
+                         f"({WHOLE_MAX // 1024} KB): read a part with offset and limit, or search it with search_files")
+    text = read_text(full, path)
     lines = text.removesuffix("\n").split("\n") if text else []
-    first = max(int(offset), 1)
-    shown = [line.removesuffix("\r") for line in lines[first - 1:first - 1 + int(limit)]]
-    if not shown:
+    first = max(int(offset or 1), 1)
+    wanted = [line.removesuffix("\r") for line in lines[first - 1:first - 1 + int(limit or READ_LIMIT)]]
+    if not wanted:
         return f"({path} has {len(lines)} lines)"
-    return cut("\n".join(f"{n:>6}\t{line}" for n, line in enumerate(shown, first)))
+    page, size = [], -1
+    for n, line in enumerate(wanted, first):
+        size += len(row := f"{n:>6}\t{line}") + 1
+        if size > PAGE_MAX:
+            break
+        page.append(row)
+    last = first + len(page) - 1
+    if len(page) == len(wanted) and (not whole or last == len(lines)):
+        return "\n".join(page)
+    if not page:
+        raise ValueError(f"Line {first} of {path} alone is over {PAGE_MAX:,} characters: search it with search_files")
+    if not whole:
+        raise ValueError(f"Lines {first}-{first + len(wanted) - 1} of {path} are more than {PAGE_MAX:,} characters: "
+                         f"read fewer (offset={first} limit={len(page)} fits), or search it with search_files")
+    return "\n".join(page) + (
+        f"\n\n[PARTIAL view of {path}: showing lines 1-{last} of {len(lines)} total ({len(text):,} characters, "
+        f"cap {PAGE_MAX:,} per read). Call read_file with offset={last + 1} limit={last} for the next page, or "
+        f"search_files to find a specific section. Do NOT answer from this page alone if the answer may be further "
+        f"in the file.]")
 
 
 def write_file(cwd: Path, path: str, content: str) -> str:
@@ -198,7 +254,7 @@ def edit_file(cwd: Path, path: str, old_string: str, new_string: str, replace_al
 
 
 def search_files(cwd: Path, pattern: str, path: str = ".", glob: str = "**/*", output_mode: str = MODES[0],
-                 ignore_case: bool = False, context: int = 0) -> str:
+                 ignore_case: bool = False, context: int = 0, offset: int = 0) -> str:
     if output_mode not in MODES:
         raise ValueError(f"output_mode must be one of: {', '.join(MODES)}")
     rx = re.compile(pattern, re.IGNORECASE if ignore_case else 0)
@@ -211,25 +267,30 @@ def search_files(cwd: Path, pattern: str, path: str = ".", glob: str = "**/*", o
         lines = [line.removesuffix("\r") for line in text.split("\n")]
         if "\0" not in text and (found := [i for i, line in enumerate(lines) if rx.search(line)]):  # \0: binary
             hits[name] = lines, found
-    total = sum(len(found) for _, found in hits.values())
+    total, skip = sum(len(found) for _, found in hits.values()), max(int(offset), 0)
     if not hits:
         return f"No matches in {len(targets)} files"
+    if skip >= (total if output_mode == "content" else len(hits)):
+        return "No entries at this offset"  # as in Claude Code's Grep: the pattern does match, earlier
+    narrow = "the pattern, path or glob"
     if output_mode == "files_with_matches":
-        return capped(list(hits), "files", "the pattern, path or glob")
+        return capped(list(hits), "files", narrow, skip)
     if output_mode == "count":
         counts = [f"{name}:{len(found)}" for name, (_, found) in hits.items()]
-        return capped(counts, "files", "the pattern, path or glob") + f"\n{total} matches in {len(hits)} files"
-    shown, left = [], SEARCH_LIMIT
+        return capped(counts, "files", narrow, skip) + f"\n{total} matches in {len(hits)} files"
+    first, shown, left = skip, [], SEARCH_LIMIT
     for name, (lines, found) in hits.items():
-        keep, left = set(found[:max(left, 0)]), left - len(found)
+        keep, skip = found[skip:][:max(left, 0)], max(skip - len(found), 0)
+        keep, left = set(keep), left - len(keep)
         near = {j for i in keep for j in range(max(i - context, 0), min(i + context + 1, len(lines)))}
         for j in sorted(near):
             if context and shown and j - 1 not in near:
                 shown.append("--")
             mark = ":" if j in keep else "-"  # path:line:text for a match, path-line-text around it
             shown.append(f"{name}{mark}{j + 1}{mark}{lines[j]}")
-    more = f"\n[{total - SEARCH_LIMIT} more matches not shown: narrow the pattern, path or glob]"
-    return cut("\n".join(shown)) + (more if total > SEARCH_LIMIT else "")
+    rest = total - first - SEARCH_LIMIT
+    more = f"\n[{rest} more matches not shown: narrow {narrow}, or offset={first + SEARCH_LIMIT} for the next page]"
+    return "\n".join(shown) + (more if rest > 0 else "")
 
 
 def find_files(cwd: Path, pattern: str, path: str = ".") -> str:
@@ -237,14 +298,20 @@ def find_files(cwd: Path, pattern: str, path: str = ".") -> str:
     return capped(found, "files", "the pattern or path") if found else "No files found"
 
 
-def capped(items: list[str], what: str, narrow: str) -> str:
-    more = f"\n[{len(items) - SEARCH_LIMIT} more {what} not shown: narrow {narrow}]"
-    return cut("\n".join(items[:SEARCH_LIMIT])) + (more if len(items) > SEARCH_LIMIT else "")
+def capped(items: list[str], what: str, narrow: str, offset: int | None = None) -> str:
+    """Up to SEARCH_LIMIT items from offset: search_files pages on with offset, find_files doesn't (Claude Code's Glob
+    has no offset either)."""
+    start = offset or 0
+    rest = len(items) - start - SEARCH_LIMIT
+    page = "" if offset is None else f", or offset={start + SEARCH_LIMIT} for the next page"
+    more = f"\n[{rest} more {what} not shown: narrow {narrow}{page}]"
+    return "\n".join(items[start:start + SEARCH_LIMIT]) + (more if rest > 0 else "")
 
 
 def files(cwd: Path, path: str, pattern: str) -> list[tuple[str, Path]]:
     """The files under path that match a glob (!glob: all but those), as (path in the project, full path), sorted by
-    path (Claude Code's Glob sorts by age; here every work copy is new). No hidden folders; the file tools' rails."""
+    path (Claude Code's Glob sorts by age; here every work copy is new). No hidden folders below path (named as the
+    path, .outputs is searched); the file tools' rails."""
     base, root = resolve(cwd, path), cwd.resolve()
     if base.is_file():
         return [(base.relative_to(root).as_posix(), base)]
@@ -259,7 +326,7 @@ def files(cwd: Path, path: str, pattern: str) -> list[tuple[str, Path]]:
                 for full in map(Path.resolve, base.glob(p)) if full.is_file() and allowed(cwd, full)}
 
     found = matching("**/*") - matching(pattern[1:]) if pattern.startswith("!") else matching(pattern)
-    return sorted(f for f in found if not HIDDEN.search(f[0]))
+    return sorted(f for f in found if not HIDDEN.search(f[1].relative_to(base).as_posix()))
 
 
 def braces(pattern: str) -> list[str]:

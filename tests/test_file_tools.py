@@ -4,7 +4,7 @@ import os
 import pytest
 
 from agent import loop
-from agent.tools import MAX_OUTPUT, describe, run_tool
+from agent.tools import describe, run_tool
 from tests.test_guards import claude, message
 
 
@@ -26,12 +26,6 @@ def test_read_shows_line_numbers_and_a_range(tmp_path):
     assert not is_error and output == "     4\tline 4\n     5\tline 5"
     assert call(tmp_path, "read_file", path="a.txt")[0].splitlines()[-1] == "    10\tline 10"
     assert call(tmp_path, "read_file", path="a.txt", offset=20)[0] == "(a.txt has 10 lines)"
-
-
-def test_a_long_read_is_cut_like_bash_output(tmp_path):
-    put(tmp_path, "big.md", b"x" * 100 + b"\n" + b"y" * 30_000 + b"\n")
-    output, _ = call(tmp_path, "read_file", path="big.md")
-    assert len(output) < MAX_OUTPUT + 100 and "more characters cut]" in output
 
 
 def test_a_missing_file_is_an_error(tmp_path):

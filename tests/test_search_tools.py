@@ -74,7 +74,7 @@ def test_the_cap_says_how_many_more_matched(tmp_path):
     put(tmp_path, "big.log", b"WARNING row\n" * (SEARCH_LIMIT + 37))
     shown = lines(tmp_path, "WARNING")[0].splitlines()
     assert len(shown) == SEARCH_LIMIT + 1 and shown[-2] == f"big.log:{SEARCH_LIMIT}:WARNING row"
-    assert shown[-1] == "[37 more matches not shown: narrow the pattern, path or glob]"
+    assert shown[-1] == "[37 more matches not shown: narrow the pattern, path or glob, or offset=100 for the next page]"
     for n in range(SEARCH_LIMIT + 5):
         put(tmp_path, f"logs/{n:03}.log", b"WARNING\n")
     listed = call(tmp_path, "search_files", pattern="WARNING")[0].splitlines()
