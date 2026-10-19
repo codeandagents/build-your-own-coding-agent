@@ -15,7 +15,8 @@ Not affiliated with Anthropic. "Claude Code" describes the kind of tool built he
 | [`ep03`](../../tree/ep03) | 3. The context budget | Claude Code's limits on how much of a tool's output reaches the model, and how it gets the rest: a result over 30,000 characters is saved to a file in the project's `.outputs/` folder (the model gets its path and the first 2,000 characters), a failed command keeps its first and last 5,000 characters, `read_file` reads up to 40,000 characters a call and returns a longer file as pages with a "PARTIAL view" notice, and `search_files` pages on with `offset` |
 
 Each episode's follow-along notes (every command the video runs, and what to look for) are in
-[`docs/follow-along/`](docs/follow-along/).
+[`docs/follow-along/`](docs/follow-along/): [episode 1](docs/follow-along/ep01.md),
+[episode 2](docs/follow-along/ep02.md), [episode 3](docs/follow-along/ep03.md).
 
 ## What's in it
 
