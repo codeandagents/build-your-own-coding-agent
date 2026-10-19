@@ -76,7 +76,8 @@ the same shape on any provider whose API has tool calling; this code talks to An
 
 ## What it costs
 
-On 2026-10-19, the whole benchmark (15 tasks, 3 tries) cost $0.29 with episode 4's harness, about $0.007 a try. Prices change
+On 2026-10-19, the whole benchmark (15 tasks, 3 tries) cost $0.27 with episode 5's harness at a 32,000-token window,
+about $0.006 a try (202 of its 461 requests were replayed free from earlier runs' recordings). Prices change
 with every model release: check your provider's pricing page. The guards in `agent/llm.py`:
 - a total budget (`budget_usd` in `.runs/config.json`, default $5) and a cap per run (`--run-budget`, default $0.50),
   both checked before every request;
