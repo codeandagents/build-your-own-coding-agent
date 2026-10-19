@@ -84,7 +84,9 @@ INLINE_MAX = 30_000     # characters of a result the model gets as is; a longer 
 PREVIEW = 2_000         # ... and the model gets the file's path and this much of its start
 FAILED_MAX = 10_000     # a failed command's output: its start and its end, this much in all, no file
 PAGE_MAX = 40_000       # characters per read_file call: Claude Code's 25,000 tokens are an eighth of its 200k window;
-                        # an eighth of our 80k ceiling (loop.PROMPT_CEILING) is 10,000 tokens, about 40,000 characters
+                        # an eighth of our 80k ceiling (loop.PROMPT_CEILING) is 10,000 tokens, which we took to be
+                        # 40,000 characters (4 a token). Measured in episode 5, this project's files run 1.7-2.4
+                        # characters a token, so a full page is nearer 20,000 tokens: a quarter of the ceiling
 WHOLE_MAX = 256 * 1024  # bytes: a whole file larger than this is refused (read a part, or search it), as in Claude Code
 SAVED = ".outputs"      # long results go here, inside the project, where the file tools can read them
 BENIGN = re.compile(r"(grep|rg|egrep|fgrep|find|diff|test|git\s+(diff|grep))\b|\[\s")  # exit 1 isn't a failure

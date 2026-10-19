@@ -4,6 +4,7 @@ import json
 import subprocess
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from anthropic.types import Message
@@ -32,6 +33,9 @@ class FakeClient:
     def create(self, **params):
         self.calls.append(params)
         return self.replies.pop(0)
+
+    def count_tokens(self, **params):  # a stand-in for the API's count: 4 characters a token
+        return SimpleNamespace(input_tokens=len(json.dumps(params, default=str)) // 4)
 
 
 def claude(tmp_path, *replies, **kwargs):

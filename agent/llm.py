@@ -99,12 +99,13 @@ class Claude:
     def recorded(self, **params) -> bool:
         return (self.cassettes / f"{self.key({'model': self.model, **params})}.json").exists()
 
-    def create(self, task: str = "", **params) -> Message:
+    def create(self, task: str = "", kind: str = "turn", **params) -> Message:
+        """kind: what the request is for, in the ledger (a turn of the loop, or a compaction's summary)."""
         params = {"model": self.model, **params}
         path = self.cassettes / f"{self.key(params)}.json"
         if path.exists():
             message = Message.model_validate_json(path.read_text(encoding="utf-8"))
-            self._log(task, message, usd=0.0, replayed=True)
+            self._log(task, kind, message, usd=0.0, replayed=True)
             return message
         if self.replay_only:
             raise SpendRefused("this request was never recorded, and replay-only is on")
@@ -122,14 +123,15 @@ class Claude:
         self.cassettes.mkdir(parents=True, exist_ok=True)
         path.write_text(message.model_dump_json(), encoding="utf-8")  # saved before use: never bought twice
         usd = price(self.model, message.usage)
-        self._log(task, message, usd=usd, replayed=False)
+        self._log(task, kind, message, usd=usd, replayed=False)
         if self.warn_at and spent < self.warn_at <= spent + usd:
             print(f"\n*** API spend has reached ${spent + usd:.2f} (warn_usd ${self.warn_at:.2f}): time to top up ***\n")
         return message
 
-    def _log(self, task: str, message: Message, *, usd: float, replayed: bool) -> None:
+    def _log(self, task: str, kind: str, message: Message, *, usd: float, replayed: bool) -> None:
         u = message.usage
-        self.ledger.add({"t": time.strftime("%Y-%m-%dT%H:%M:%S"), "run": self.run, "task": task, "model": self.model,
+        self.ledger.add({"t": time.strftime("%Y-%m-%dT%H:%M:%S"), "run": self.run, "task": task, "kind": kind,
+                         "model": self.model,
                          "input": u.input_tokens, "cache_write": u.cache_creation_input_tokens or 0,
                          "cache_read": u.cache_read_input_tokens or 0, "output": u.output_tokens,
                          "usd": round(usd, 6), "replayed": replayed, "id": message.id})

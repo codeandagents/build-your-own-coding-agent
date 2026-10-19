@@ -14,6 +14,7 @@ Not affiliated with Anthropic. "Claude Code" describes the kind of tool built he
 | [`ep02`](../../tree/ep02) | 2. Claude Code's tools | `read_file`, `write_file`, `edit_file`, `search_files` (a regex search: the files that match by default, or their lines, or counts) and `find_files` (files that match a glob) next to `bash`, modelled on Claude Code's Read, Write, Edit, Grep and Glob, and bash's description steering file work and searches to them. Its steps: [`ep02-tools-only`](../../tree/ep02-tools-only) (the file tools alone), [`ep02-steer`](../../tree/ep02-steer) (plus the steering sentence), [`ep02-search-lines`](../../tree/ep02-search-lines) (plus a search that always printed the matching lines) |
 | [`ep03`](../../tree/ep03) | 3. The context budget | Claude Code's limits on how much of a tool's output reaches the model, and how it gets the rest: a result over 30,000 characters is saved to a file in the project's `.outputs/` folder (the model gets its path and the first 2,000 characters), a failed command keeps its first and last 5,000 characters, `read_file` reads up to 40,000 characters a call and returns a longer file as pages with a "PARTIAL view" notice, and `search_files` pages on with `offset` |
 | [`ep04`](../../tree/ep04) | 4. A sandbox | the shell runs in a Docker container per task, with no network and one folder shared with your machine: the project; without Docker, every command waits for your yes. It replaces episodes 1-3's list of blocked patterns (`bench.escape` compares the two) |
+| [`ep05`](../../tree/ep05) | 5. Compaction | when the conversation no longer fits the context window, Claude Code's two steps: old tool outputs (all but the newest three) become one-line notes, then, if that isn't enough, the model summarizes its work under the six headings Claude Code's docs list and the conversation starts again from the task, the summary and the files it touched last; a guard stops a task whose window fills up again after every summary. `--window` and `--compact none\|clear\|full` set the window and the steps (the benchmark runs at 32,000 tokens) |
 
 Each episode's follow-along notes (every command the video runs, and what to look for) are in
 [`docs/follow-along/`](docs/follow-along/): [episode 1](docs/follow-along/ep01.md),
@@ -23,6 +24,7 @@ Each episode's follow-along notes (every command the video runs, and what to loo
 
 ```
 agent/loop.py       the agent loop: send the conversation, run the tools the model asks for, repeat
+agent/compact.py    compaction: what the loop does when the conversation no longer fits the context window
 agent/tools.py      the tools: bash, read_file, write_file, edit_file, search_files and find_files, and the context
                     budget (how much of their output the model sees)
 agent/sandbox.py    the sandbox bash runs in: one Docker container per task (see Safety below)
@@ -35,7 +37,8 @@ bench/board.py      print a run's scoreboard
 results/            the scoreboards the videos show (ep01.jsonl = the episode-1 baseline; ep02-tools-only.jsonl,
                     ep02-steer.jsonl, ep02-search-lines.jsonl and ep02.jsonl = episode 2's steps, the last one
                     its final harness; the -r4-6 files add tries 4-6 to three of them; ep03.jsonl = episode 3;
-                    ep04.jsonl = episode 4)
+                    ep04.jsonl = episode 4; ep05-none.jsonl, ep05-clear.jsonl and ep05.jsonl = episode 5's three runs
+                    at a 32,000-token window: no compaction, clearing only, clearing + summary)
 bench/escape.py     commands agents ran that reached past their folder: what the old rails did with them, and the
                     sandbox
 ```
@@ -64,6 +67,7 @@ uv run python -m bench.run --plan                     # free: counts the first r
 uv run python -m bench.run --tasks t01 --brief        # one task, in short, coloured output
 uv run python -m bench.run --repeat 3 --label mine    # the whole benchmark, 3 tries per task
 uv run python -m agent "your task" --cwd path/to/a/project
+uv run python -m bench.run --tasks t11 --window 32000 --brief   # watch it compact
 ```
 
 The model is Claude Haiku 5.5 with effort `low`, fixed for the whole series: only the harness changes. The loop has
@@ -78,7 +82,8 @@ with every model release: check your provider's pricing page. The guards in `age
   both checked before every request;
 - a ledger of every request's tokens and cost, `.runs/ledger.jsonl`;
 - record/replay: every response is saved in `.runs/cassettes/`, and the same request again is read from disk, free;
-- 25 turns per task, and a stop before a prompt grows past 80,000 tokens.
+- 25 turns per task, and no request over 80,000 tokens; past the context window (64,000 tokens, or `--window`) the
+  conversation is compacted, and a summary is one more request (each one is in the ledger as `"kind": "summary"`).
 
 ## Safety: read this before you run it
 

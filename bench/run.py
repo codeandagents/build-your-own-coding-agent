@@ -1,14 +1,15 @@
 """python -m bench.run [--tasks t01,t02] [--repeat N] [--first-repeat N] [--label NAME] [--plan] [--run-budget USD]
-[--replay-only] [--brief]
+[--replay-only] [--brief] [--window TOKENS] [--compact none|clear|full]
 
 Runs the agent on each task in a fresh copy of the project, scores it with the hidden checks, prints a scoreboard
 and appends it to .runs/results/<label>.jsonl. --plan spends nothing: it counts the first request's tokens
-(token counting is free) and estimates the cost of the run."""
+(token counting is free) and estimates the cost of the run. --window and --compact set the context window and what
+happens past it (episode 5: agent/compact.py)."""
 import argparse
 import json
 import time
 
-from agent import loop
+from agent import compact, loop
 from agent.llm import RUNS, Claude, SpendRefused, price
 from agent.sandbox import Sandbox, available
 
@@ -20,6 +21,8 @@ from .tasks import load, prepare, score
 TURNS_TYPICAL = 12
 GROWTH_PER_TURN = 1_500  # tokens added per turn: tool output + the model's turn (incl. thinking it keeps)
 OUTPUT_PER_TURN = 300
+SUMMARY_OUT = 2_000      # tokens a summary request writes (the summary, and the thinking before it)
+COMPACTIONS_WORST = 10   # compactions in one try, for the worst case (the thrash guard stops a try that keeps filling up)
 
 
 class Usage:  # the shape price() reads
@@ -38,6 +41,15 @@ def estimate(model: str, prefix: int, turns: int) -> float:
     return total
 
 
+def compaction_cost(model: str, window: int, mode: str) -> float:
+    """What one compaction adds, at most. Clearing rewrites the cache from the first cleared output on (at most the
+    whole window). A summary also writes its request to the cache, writes the summary, and starts a new conversation
+    (the summary, and files read again: an eighth of the window)."""
+    clearing = price(model, Usage(0, window, 0, 0))
+    summary = price(model, Usage(0, window, 0, SUMMARY_OUT)) + price(model, Usage(0, window // 8 + SUMMARY_OUT, 0, 0))
+    return {"none": 0.0, "clear": clearing, "full": clearing + summary}[mode]
+
+
 def plan(args, tasks) -> int:
     claude = Claude()
     spent = claude.ledger.total()
@@ -53,12 +65,19 @@ def plan(args, tasks) -> int:
     n = args.repeat
     print(f"\n{len(tasks)} task(s) x {n} repeat(s): typical ${typical * n:.3f}, worst case ${worst * n:.3f} "
           f"(every task running to {loop.MAX_TURNS} turns)")
+    if args.compact != "none":
+        each = compaction_cost(claude.model, args.window, args.compact)
+        print(f"Window {args.window:,} tokens, compaction '{args.compact}': each compaction adds up to ${each:.4f}; "
+              f"{COMPACTIONS_WORST} in every try would add ${each * COMPACTIONS_WORST * len(tasks) * n:.3f}.")
     print(f"Spent so far ${spent:.4f} of the ${claude.budget:.2f} budget; this run's cap ${args.run_budget:.2f}.")
     return 0
 
 
 BRIEF_LINES = 4
-CYAN, YELLOW, GREY, GREEN, RED, PLAIN = "\x1b[36m", "\x1b[33m", "\x1b[90m", "\x1b[32m", "\x1b[31m", "\x1b[0m"
+SUMMARY_LINES = 12  # a summary's first lines
+HARNESS = ("[context:", "[cleared", "[summary:", "[still past", "[the window", "[the summary")  # loop.run's own lines
+CYAN, YELLOW, GREY, GREEN, RED, MAGENTA, PLAIN = ("\x1b[36m", "\x1b[33m", "\x1b[90m", "\x1b[32m", "\x1b[31m",
+                                                  "\x1b[35m", "\x1b[0m")
 
 
 def brief(text: str) -> None:
@@ -68,6 +87,12 @@ def brief(text: str) -> None:
         print(f"{CYAN}{text}{PLAIN}")
     elif text.startswith(("$ ", "> ")):  # a command, or a file tool's call
         print(f"{YELLOW}{text}{PLAIN}")
+    elif text.startswith(HARNESS):  # the harness at work: the window, a compaction
+        print(f"{MAGENTA}{text}{PLAIN}")
+    elif text.startswith("summary: "):
+        lines = text.splitlines()
+        more = "\n..." if len(lines) > SUMMARY_LINES else ""
+        print(f"{MAGENTA}{chr(10).join(lines[:SUMMARY_LINES])}{more}{PLAIN}")
     else:
         lines = text.splitlines()
         more = "\n..." if len(lines) > BRIEF_LINES else ""
@@ -85,6 +110,9 @@ def main() -> int:
     parser.add_argument("--run-budget", type=float, default=0.50, help="stop this run once it has cost this much")
     parser.add_argument("--replay-only", action="store_true", help="never call the API")
     parser.add_argument("--brief", action="store_true", help="short, coloured output (each command's first lines)")
+    parser.add_argument("--window", type=int, default=loop.WINDOW, help="the context window, in tokens")
+    parser.add_argument("--compact", choices=compact.MODES, default="full",
+                        help="past the window: none ends the task, clear clears old tool outputs, full also summarizes")
     args = parser.parse_args()
     tasks = load(args.tasks.split(",") if args.tasks else None)
     if args.plan:
@@ -104,17 +132,20 @@ def main() -> int:
                 before = len(claude.ledger.entries())  # this try's requests only, not the task's earlier tries
                 with Sandbox(folder) as box:
                     result = loop.run(task.prompt, claude, folder, label=task.id, log=brief if args.brief else print,
-                                      box=box)
+                                      box=box, window=args.window, mode=args.compact)
                 passed, summary = score(task, folder)
                 spent = [e for e in claude.ledger.entries()[before:] if e["run"] == run_id and e["task"] == task.id]
                 rows.append({"task": task.id, "repeat": r, "stop": result.stop, "turns": result.turns,
                              "passed": passed, "usd": round(sum(e["usd"] for e in spent), 5),
                              "requests": len(spent), "replayed": sum(e["replayed"] for e in spent),
-                             "tests": summary})
+                             "window": args.window, "compact": args.compact, "clearings": result.clearings,
+                             "summaries": result.summaries, "tests": summary})
                 verdict = "PASS" if passed else "FAIL"
                 if args.brief:
                     verdict = f"{GREEN if passed else RED}{verdict}{PLAIN}"
-                print(f"=== {task.id}: {verdict} ({result.stop}, {result.turns} turns, "
+                compacted = "".join(f", {n} {what}" for n, what in ((result.clearings, "cleared"),
+                                                                     (result.summaries, "summarized")) if n)
+                print(f"=== {task.id}: {verdict} ({result.stop}, {result.turns} turns{compacted}, "
                       f"${rows[-1]['usd']:.4f}) {summary}")
     except SpendRefused as e:
         print(f"\nSTOPPED: {e}")
