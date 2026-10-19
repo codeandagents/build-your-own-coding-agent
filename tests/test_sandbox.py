@@ -40,7 +40,7 @@ def test_the_old_rails_matched_text_not_reach():
     assert not escape.rails("cp clinic.json ../clinic-before-dedupe.json")  # ep 2's write outside the folder
     assert not escape.rails('grep -rl "a\\|b" / --exclude-dir=proc')  # ep 3's whole-disk grep: the \| hid the /
     assert not escape.rails('cd "$OLDPWD" && ls')
-    harmless = next(a for a in escape.ATTEMPTS if a.seen.startswith("ep 2 act 1, t09"))
+    harmless = next(a for a in escape.ATTEMPTS if a.seen.startswith("ep02-tools-only, t09"))
     assert escape.rails(harmless.command)  # a / in Python code, a line after a grep
 
 

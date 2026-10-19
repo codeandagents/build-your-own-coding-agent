@@ -107,7 +107,7 @@ def shell() -> list[str]:
 def tool_env(home: Path | None = None) -> dict:
     """The agent's shell never sees API keys, and finds this environment's python and pytest first.
     HOME is the project folder, so `cd ~` lands there and not in the user's own files."""
-    env = {k: v for k, v in os.environ.items() if not SECRET.search(k) and k != "OLDPWD"}  # ep 3: `cd "$OLDPWD"`
+    env = {k: v for k, v in os.environ.items() if not SECRET.search(k) and k != "OLDPWD"}  # ep02 runs: `cd "$OLDPWD"`
     env["PATH"] = str(Path(sys.executable).parent) + os.pathsep + env.get("PATH", "")
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     env["PYTHONIOENCODING"] = "utf-8"
