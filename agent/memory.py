@@ -7,8 +7,8 @@ persistent context" and "Auto memory: notes Claude writes itself based on your c
 2. Auto memory: a folder outside the project. Its index, MEMORY.md (the first 200 lines or 25KB), goes into the first
    message too; each memory is a file of its own, read when the agent needs it. The agent writes them with write_file
    and edit_file, and the system prompt says when: the one place outside the project the file tools may use. The
-   sandbox shares the folder with the shell to read only, as Claude Code's sandboxed shell can read its memory but not
-   write it.
+   sandbox shares the folder with the shell to read only: Claude Code's sandboxed shell reads "most of the machine"
+   and writes only the project and a temp folder (code.claude.com/docs/en/sandboxing).
 
 Both are context, not rules: the model reads them, and decides."""
 from pathlib import Path

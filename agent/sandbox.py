@@ -32,8 +32,8 @@ def inside(folder: Path) -> str:
 
 class Sandbox:
     """One container per task; each command runs in it in a fresh bash (docker exec).
-    memory (episode 6): the agent's memory folder, shared read-only, as Claude Code's sandboxed shell can read its
-    memory but not write it (the file tools write it)."""
+    memory (episode 6): the agent's memory folder, shared read-only (the file tools write it). Claude Code's sandboxed
+    shell reads most of the machine and writes only the project and a temp folder."""
 
     def __init__(self, folder: Path, memory: Path | None = None):
         self.name, self.workdir = f"byoca-{uuid.uuid4().hex[:8]}", inside(folder)
