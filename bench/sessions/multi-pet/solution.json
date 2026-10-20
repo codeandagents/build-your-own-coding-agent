@@ -1,0 +1,9 @@
+[
+  {"file": "petclinic/billing/invoices.py", "find": "KINDS = (\"consult\", \"medicine\", \"procedure\", \"discount\")\n",
+   "replace": "KINDS = (\"consult\", \"medicine\", \"procedure\", \"discount\")\nMULTI_PET = 3                   # pets an owner has\nMULTI_PET_DISCOUNT_PERCENT = 5  # off consultations\n"},
+  {"file": "petclinic/billing/invoices.py",
+   "find": "        invoice.add(description, cents, quantity, kind)\n    if owner.insurer == insurance.PETCOVER:\n",
+   "replace": "        invoice.add(description, cents, quantity, kind)\n    if sum(pet.owner_id == owner.id for pet in store.pets.values()) >= MULTI_PET:\n        add_discount(invoice, \"Multi-pet discount\", MULTI_PET_DISCOUNT_PERCENT)\n    if owner.insurer == insurance.PETCOVER:\n"},
+  {"file": "petclinic/billing/invoices.py", "find": "def format_invoice(invoice: Invoice) -> str:\n",
+   "replace": "def add_discount(invoice: Invoice, name: str, percent: int) -> None:\n    \"\"\"A percentage off the consultation lines, as its own line right after the last of them (code review's rules).\"\"\"\n    consults = [i for i, line in enumerate(invoice.lines) if line.kind == \"consult\"]\n    discount = percent_of(sum(invoice.lines[i].amount for i in consults), percent)\n    if consults and discount:\n        invoice.lines.insert(consults[-1] + 1, Line(f\"{name} ({percent}%)\", -discount, 1, \"discount\"))\n\n\ndef format_invoice(invoice: Invoice) -> str:\n"}
+]

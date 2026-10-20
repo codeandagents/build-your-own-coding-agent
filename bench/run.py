@@ -1,19 +1,25 @@
 """python -m bench.run [--tasks t01,t02] [--repeat N] [--first-repeat N] [--label NAME] [--plan] [--run-budget USD]
-[--replay-only] [--brief] [--window TOKENS] [--compact none|clear|full]
+[--replay-only] [--brief] [--window TOKENS] [--compact none|clear|full] [--memory none|empty|FOLDER]
 
 Runs the agent on each task in a fresh copy of the project, scores it with the hidden checks, prints a scoreboard
 and appends it to .runs/results/<label>.jsonl. --plan spends nothing: it counts the first request's tokens
 (token counting is free) and estimates the cost of the run. --window and --compact set the context window and what
-happens past it (episode 5: agent/compact.py)."""
+happens past it (episode 5: agent/compact.py). --memory (episode 6: agent/memory.py): each task starts with no
+memory, an empty one (the default), or a copy of a saved one; a folder with r0, r1... in it (bench.yesterday's) gives
+try N its own rN. Every task starts from that copy, so no task learns from another; what a task saved is kept in
+.runs/memory/<run>/ to read afterwards."""
 import argparse
 import json
+import shutil
 import time
+from pathlib import Path
 
 from agent import compact, loop
+from agent import memory as mem
 from agent.llm import RUNS, Claude, SpendRefused, price
 from agent.sandbox import Sandbox, available
 
-from .tasks import load, prepare, score
+from .tasks import PROJECT, load, prepare, score, work_root
 
 # Estimate assumptions. The pilot (2026-10-16, 5 easy tasks) measured 5.2 turns per task, ~870 prompt tokens added
 # per turn and 273 output tokens per request ($0.0013 per task; this model gave $0.0013 too). These values plan
@@ -50,13 +56,40 @@ def compaction_cost(model: str, window: int, mode: str) -> float:
     return {"none": 0.0, "clear": clearing, "full": clearing + summary}[mode]
 
 
+def start_memory(source: str, repeat: int) -> Path | None:
+    """One try's memory folder, fresh: None (no memory), empty, or a copy of a saved one (its rN for try N+1, if it
+    has those). It sits outside the project, next to the work copies, as Claude Code's sits outside the repository
+    (~/.claude/projects/<project>/memory/)."""
+    if source == "none":
+        return None
+    live = work_root() / "memory"  # under the work root, which carries the marker: safe to delete
+    if live.exists():
+        shutil.rmtree(live)
+    live.mkdir(parents=True)
+    if source != "empty":
+        root = Path(source)
+        tries = sorted(p.name for p in root.glob("r[0-9]*") if p.is_dir())
+        saved = root / f"r{repeat}" if tries else root
+        if not saved.is_dir():
+            raise SystemExit(f"--memory: no folder {saved}" + (f" (it has {', '.join(tries)})" if tries else ""))
+        shutil.copytree(saved, live, dirs_exist_ok=True)
+    return live
+
+
+def saved_files(before: dict, memory: Path | None) -> list[str]:
+    """The memory files a session wrote or changed."""
+    after = mem.snapshot(memory) if memory else {}
+    return [name for name, text in after.items() if before.get(name) != text]
+
+
 def plan(args, tasks) -> int:
     claude = Claude()
     spent = claude.ledger.total()
     typical = worst = 0.0
     print(f"{'task':22} {'first prompt':>12} {'recorded':>8} {'typical':>9} {'worst case':>10}")
     for task in tasks:
-        first = loop.request([{"role": "user", "content": task.prompt}])
+        memory = start_memory(args.memory, args.first_repeat)  # the first try's memory, as the run will start it
+        first = loop.request([mem.first_message(task.prompt, PROJECT, memory)], memory=memory)
         prefix = claude.count_tokens(system=first["system"], tools=first["tools"], messages=first["messages"])
         recorded = Claude(salt="r0").recorded(**first)
         t, w = estimate(claude.model, prefix, TURNS_TYPICAL), estimate(claude.model, prefix, loop.MAX_TURNS)
@@ -75,9 +108,10 @@ def plan(args, tasks) -> int:
 
 BRIEF_LINES = 4
 SUMMARY_LINES = 12  # a summary's first lines
-HARNESS = ("[context:", "[cleared", "[summary:", "[still past", "[the window", "[the summary")  # loop.run's own lines
-CYAN, YELLOW, GREY, GREEN, RED, MAGENTA, PLAIN = ("\x1b[36m", "\x1b[33m", "\x1b[90m", "\x1b[32m", "\x1b[31m",
-                                                  "\x1b[35m", "\x1b[0m")
+HARNESS = ("[context:", "[cleared", "[summary:", "[still past", "[the window", "[the summary",  # loop.run's own lines
+           "[project instructions", "[memory", "[loaded")
+CYAN, YELLOW, GREY, GREEN, RED, MAGENTA, BOLD, PLAIN = ("\x1b[36m", "\x1b[33m", "\x1b[90m", "\x1b[32m", "\x1b[31m",
+                                                        "\x1b[35m", "\x1b[1m", "\x1b[0m")
 
 
 def brief(text: str) -> None:
@@ -85,6 +119,8 @@ def brief(text: str) -> None:
     Display only: the model still gets the whole output."""
     if text.startswith("agent: "):
         print(f"{CYAN}{text}{PLAIN}")
+    elif text.startswith("user: "):  # the user's reply (yesterday's code review)
+        print(f"{BOLD}{text}{PLAIN}")
     elif text.startswith(("$ ", "> ")):  # a command, or a file tool's call
         print(f"{YELLOW}{text}{PLAIN}")
     elif text.startswith(HARNESS):  # the harness at work: the window, a compaction
@@ -113,6 +149,8 @@ def main() -> int:
     parser.add_argument("--window", type=int, default=loop.WINDOW, help="the context window, in tokens")
     parser.add_argument("--compact", choices=compact.MODES, default="full",
                         help="past the window: none ends the task, clear clears old tool outputs, full also summarizes")
+    parser.add_argument("--memory", default="empty",
+                        help="none, empty (the default), or a saved memory folder (with r0, r1...: one per try)")
     args = parser.parse_args()
     tasks = load(args.tasks.split(",") if args.tasks else None)
     if args.plan:
@@ -130,21 +168,28 @@ def main() -> int:
                 claude = Claude(run=run_id, salt=f"r{r}", run_budget_usd=args.run_budget, replay_only=args.replay_only)
                 print(f"\n=== {task.id} (repeat {r + 1}) in {folder}")
                 before = len(claude.ledger.entries())  # this try's requests only, not the task's earlier tries
+                memory = start_memory(args.memory, r)
+                remembered = mem.snapshot(memory) if memory else {}
                 with Sandbox(folder) as box:
                     result = loop.run(task.prompt, claude, folder, label=task.id, log=brief if args.brief else print,
-                                      box=box, window=args.window, mode=args.compact)
+                                      box=box, window=args.window, mode=args.compact, memory=memory)
                 passed, summary = score(task, folder)
+                saved = saved_files(remembered, memory)
+                if saved:  # kept to read afterwards; the next task starts from the copy again
+                    shutil.copytree(memory, RUNS / "memory" / run_id / f"{task.id}-r{r}", dirs_exist_ok=True)
                 spent = [e for e in claude.ledger.entries()[before:] if e["run"] == run_id and e["task"] == task.id]
                 rows.append({"task": task.id, "repeat": r, "stop": result.stop, "turns": result.turns,
                              "passed": passed, "usd": round(sum(e["usd"] for e in spent), 5),
                              "requests": len(spent), "replayed": sum(e["replayed"] for e in spent),
                              "window": args.window, "compact": args.compact, "clearings": result.clearings,
-                             "summaries": result.summaries, "tests": summary})
+                             "summaries": result.summaries, "memory": args.memory, "memory_saved": saved,
+                             "tests": summary})
                 verdict = "PASS" if passed else "FAIL"
                 if args.brief:
                     verdict = f"{GREEN if passed else RED}{verdict}{PLAIN}"
                 compacted = "".join(f", {n} {what}" for n, what in ((result.clearings, "cleared"),
-                                                                     (result.summaries, "summarized")) if n)
+                                                                     (result.summaries, "summarized"),
+                                                                     (len(saved), "memory saved")) if n)
                 print(f"=== {task.id}: {verdict} ({result.stop}, {result.turns} turns{compacted}, "
                       f"${rows[-1]['usd']:.4f}) {summary}")
     except SpendRefused as e:

@@ -1,4 +1,5 @@
-"""python -m bench.selfcheck [--sandbox] [tNN ...]: proves each task is fair without calling a model.
+"""python -m bench.selfcheck [--sandbox] [tNN ...]: proves each task (and each session in bench/sessions) is fair
+without calling a model.
 
 In its starting state the project's own tests pass and the hidden check fails; with the reference fix, both pass.
 (Scoring can't tell a failing hidden check from a failing project test, so the starting state is run twice.)
@@ -7,14 +8,16 @@ import sys
 
 from agent.sandbox import Sandbox
 
-from .tasks import load, prepare, score
+from .tasks import SESSIONS, load, prepare, score, session
 
 
 def main() -> int:
     args = sys.argv[1:]
     sandboxed = "--sandbox" in args
+    ids = [a for a in args if a != "--sandbox"]
     ok = True
-    for task in load([a for a in args if a != "--sandbox"] or None):
+    sessions = [] if ids else [session(p.name) for p in sorted(SESSIONS.iterdir()) if (p / "task.md").exists()]
+    for task in load(ids or None) + sessions:  # and yesterday's session (episode 6): fair the same way
         folder = prepare(task)
         visible_ok, visible_line = in_sandbox(folder) if sandboxed else score(task, folder, hidden=False)
         start_ok, start_line = score(task, folder)

@@ -20,6 +20,7 @@ from agent.llm import settings
 HERE = Path(__file__).parent
 PROJECT = HERE / "project"
 TASKS = HERE / "tasks"
+SESSIONS = HERE / "sessions"  # episode 6: sessions that teach the agent something (bench/yesterday.py), not scored tasks
 MARKER = ".byoca-work"  # only folders under a work root that carries this file are ever deleted
 
 
@@ -40,6 +41,12 @@ def load(ids: list[str] | None = None) -> list[Task]:
     if ids:
         tasks = [t for t in tasks if any(t.id.startswith(i) for i in ids)]
     return tasks
+
+
+def session(name: str) -> Task:
+    """A session's first task, from bench/sessions/<name>/ (the same layout as a task)."""
+    path = SESSIONS / name
+    return Task(name, (path / "task.md").read_text(encoding="utf-8").strip(), path)
 
 
 def work_root() -> Path:

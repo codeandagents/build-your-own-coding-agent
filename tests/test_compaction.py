@@ -12,7 +12,7 @@ from tests.test_guards import claude, message
 LINES = "".join(f"line {n} " + "x" * 90 + "\n" for n in range(40))  # 4,000-odd characters: ~1,100 counted tokens
 
 
-def chars(claude, messages, sandboxed):
+def chars(claude, messages, *_):
     """The tests' token count: the conversation's characters / 4 (the real loop asks the API)."""
     return len(json.dumps(messages, default=str)) // 4
 

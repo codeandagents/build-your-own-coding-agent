@@ -1,11 +1,13 @@
 """The tools the model can call: a shell (episode 1), file tools modelled on Claude Code's Read, Write and Edit
 (episode 2), search tools modelled on its Grep and Glob (episode 2 too), and Claude Code's limits on how much of a
-tool's output reaches the model (episode 3: the context budget). The shell runs in a sandbox (episode 4)."""
+tool's output reaches the model (episode 3: the context budget). The shell runs in a sandbox (episode 4). The file
+tools may also use the agent's memory folder (episode 6), outside the project."""
 import os
 import re
 import signal
 import subprocess
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 from .sandbox import Sandbox
@@ -183,9 +185,25 @@ def approve(command: str) -> bool:
     return sys.stdin.isatty() and input("Run it outside the sandbox? [y/N] ").strip().lower() == "y"
 
 
+OUTSIDE: list[Path] = []  # folders outside the project the file tools may use too: the agent's memory (episode 6)
+
+
+@contextmanager
+def also(folder: Path | None):
+    """While a session runs, the file tools may read and write this folder too (its memory)."""
+    if folder is None:
+        yield
+        return
+    OUTSIDE.append(folder.resolve())
+    try:
+        yield
+    finally:
+        OUTSIDE.remove(folder.resolve())
+
+
 def resolve(cwd: Path, path: str) -> Path:
-    """The model's path, kept to the project folder and away from .env files. The file tools run on this machine,
-    outside the sandbox (as Claude Code's do): this check is their permission rule."""
+    """The model's path, kept to the project folder (and its memory folder) and away from .env files. The file tools
+    run on this machine, outside the sandbox (as Claude Code's do): this check is their permission rule."""
     if os.name == "nt":
         path = re.sub(r"^/([a-zA-Z])/", r"\1:/", path)  # Git Bash's /c/... is C:/...
     full = (cwd / path).resolve()
@@ -195,7 +213,14 @@ def resolve(cwd: Path, path: str) -> Path:
 
 
 def allowed(cwd: Path, full: Path) -> bool:
-    return full.is_relative_to(cwd.resolve()) and not re.search(r"\.env\b", str(full), re.IGNORECASE)
+    inside = full.is_relative_to(cwd.resolve()) or any(full.is_relative_to(folder) for folder in OUTSIDE)
+    return inside and not re.search(r"\.env\b", str(full), re.IGNORECASE)
+
+
+def shown(cwd: Path, full: Path) -> str:
+    """A path as the model sees it: relative in the project, in full outside it (the memory folder)."""
+    root = cwd.resolve()
+    return full.relative_to(root).as_posix() if full.is_relative_to(root) else full.as_posix()
 
 
 def read_text(full: Path, path: str) -> str:
@@ -324,9 +349,9 @@ def files(cwd: Path, path: str, pattern: str) -> list[tuple[str, Path]]:
     """The files under path that match a glob (!glob: all but those), as (path in the project, full path), sorted by
     path (Claude Code's Glob sorts by age; here every work copy is new). No hidden folders below path (named as the
     path, .outputs is searched); the file tools' rails."""
-    base, root = resolve(cwd, path), cwd.resolve()
+    base = resolve(cwd, path)
     if base.is_file():
-        return [(base.relative_to(root).as_posix(), base)]
+        return [(shown(cwd, base), base)]
     if not base.is_dir():
         raise ValueError(f"No such file or folder: {path}")
     if re.match(r"!?([a-zA-Z]:)?[\\/]", pattern):
@@ -334,7 +359,7 @@ def files(cwd: Path, path: str, pattern: str) -> list[tuple[str, Path]]:
 
     def matching(glob: str) -> set[tuple[str, Path]]:
         glob += "/*" if glob.endswith("**") else ""  # tickets/** = the files in it (Python 3.12's ** finds folders)
-        return {(full.relative_to(root).as_posix(), full) for p in braces(glob)
+        return {(shown(cwd, full), full) for p in braces(glob)
                 for full in map(Path.resolve, base.glob(p)) if full.is_file() and allowed(cwd, full)}
 
     found = matching("**/*") - matching(pattern[1:]) if pattern.startswith("!") else matching(pattern)

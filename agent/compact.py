@@ -92,7 +92,8 @@ def summary_text(response) -> str:
 
 
 def touched_files(messages: list, cwd: Path) -> list[str]:
-    """The files the model read or edited with the file tools, the most recently modified first."""
+    """The files in the project the model read or edited with the file tools, the most recently modified first (its
+    memory files come back with the memory's index instead)."""
     found = {}
     for name, args in tool_calls(messages).values():
         if name in ("read_file", "write_file", "edit_file") and args.get("path"):
@@ -100,14 +101,16 @@ def touched_files(messages: list, cwd: Path) -> list[str]:
                 full = resolve(cwd, args["path"])
             except ValueError:  # a path outside the project: the tool refused it
                 continue
-            if full.is_file():
+            if full.is_file() and full.is_relative_to(cwd.resolve()):
                 found[full.relative_to(cwd.resolve()).as_posix()] = full.stat().st_mtime
     return sorted(found, key=found.get, reverse=True)
 
 
-def restart(task: str, summary: str, cwd: Path, files: list[str], window: int) -> tuple[list, list[str], list[str]]:
-    """The new conversation: the task in the user's words, the summary, and the files the model touched last, read
-    again as they are now. A file that doesn't fit what's left of the re-read share is named, not read.
+def restart(task: str, summary: str, cwd: Path, files: list[str], window: int,
+            context: str = "") -> tuple[list, list[str], list[str]]:
+    """The new conversation: the session's context again (episode 6: the instructions and the memory's index), the
+    task in the user's words, the summary, and the files the model touched last, read again as they are now. A file
+    that doesn't fit what's left of the re-read share is named, not read.
     Returns the conversation, the files read again, and the files only named."""
     room, read, named, parts = window // REREAD_SHARE, [], [], []
     for path in files[:REREAD_FILES]:
@@ -125,4 +128,7 @@ def restart(task: str, summary: str, cwd: Path, files: list[str], window: int) -
     text = f"{task}\n\n{RESTART}\n\n<summary>\n{summary}\n</summary>"
     if parts:
         text += "\n\nThe files you read or edited most recently, as they are now:\n" + "\n".join(parts)
+    if context:
+        return [{"role": "user", "content": [{"type": "text", "text": f"<context>\n{context}\n</context>"},
+                                             {"type": "text", "text": text}]}], read, named
     return [{"role": "user", "content": text}], read, named

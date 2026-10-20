@@ -15,6 +15,7 @@ Not affiliated with Anthropic. "Claude Code" describes the kind of tool built he
 | [`ep03`](../../tree/ep03) | 3. The context budget | Claude Code's limits on how much of a tool's output reaches the model, and how it gets the rest: a result over 30,000 characters is saved to a file in the project's `.outputs/` folder (the model gets its path and the first 2,000 characters), a failed command keeps its first and last 5,000 characters, `read_file` reads up to 40,000 characters a call and returns a longer file as pages with a "PARTIAL view" notice, and `search_files` pages on with `offset` |
 | [`ep04`](../../tree/ep04) | 4. A sandbox | the shell runs in a Docker container per task, with no network and one folder shared with your machine: the project; without Docker, every command waits for your yes. It replaces episodes 1-3's list of blocked patterns (`bench.escape` compares the two) |
 | [`ep05`](../../tree/ep05) | 5. Compaction | when the conversation no longer fits the context window, Claude Code's two steps: old tool outputs (all but the newest three) become one-line notes, then, if that isn't enough, the model summarizes its work under the six headings Claude Code's docs list and the conversation starts again from the task, the summary and the files it touched last; a guard stops a task whose window fills up again after every summary. `--window` and `--compact none\|clear\|full` set the window and the steps (the benchmark runs at 32,000 tokens) |
+| [`ep06`](../../tree/ep06) | 6. Memory | what a session starts with, Claude Code's two kinds: the instructions you write (the project's `CLAUDE.md`, or its `AGENTS.md` when it has none) and the notes the agent writes itself, in a memory folder outside the project. Both go into the first message (the memory as its index, `MEMORY.md`: the first 200 lines or 25KB); a subfolder's instructions come with the first file read there, and each memory's own file is read when the agent needs it. The agent saves memories with its file tools when the user corrects it or tells it something the code can't show. `bench.yesterday` runs a session that learns something (code review sends a discount back with the clinic's rules); `bench.run --memory` starts each task from what that session kept. Back at the 64,000-token window |
 
 Each episode's follow-along notes (every command the video runs, and what to look for) are in
 [`docs/follow-along/`](docs/follow-along/): [episode 1](docs/follow-along/ep01.md),
@@ -26,6 +27,7 @@ Each episode's follow-along notes (every command the video runs, and what to loo
 ```
 agent/loop.py       the agent loop: send the conversation, run the tools the model asks for, repeat
 agent/compact.py    compaction: what the loop does when the conversation no longer fits the context window
+agent/memory.py     memory: the project's instructions and the agent's own notes, loaded when a session starts
 agent/tools.py      the tools: bash, read_file, write_file, edit_file, search_files and find_files, and the context
                     budget (how much of their output the model sees)
 agent/sandbox.py    the sandbox bash runs in: one Docker container per task (see Safety below)
@@ -34,6 +36,7 @@ agent/llm.py        the model client, wrapped in spend guards: budget, ledger, r
 bench/project/      PetClinic Lite, the app the agent works on (a vet clinic in Auckland: 115 files, 153 tests)
 bench/tasks/        15 tasks; each has a prompt (task.md) and hidden tests (check/), added only to score it
 bench/run.py        run the agent on the tasks and score it
+bench/yesterday.py  a session that teaches the agent something (bench/sessions/), and keeps its memory for bench.run
 bench/board.py      print a run's scoreboard
 results/            the scoreboards the videos show (ep01.jsonl = the episode-1 baseline; ep02-tools-only.jsonl,
                     ep02-steer.jsonl, ep02-search-lines.jsonl and ep02.jsonl = episode 2's steps, the last one
@@ -69,6 +72,9 @@ uv run python -m bench.run --tasks t01 --brief        # one task, in short, colo
 uv run python -m bench.run --repeat 3 --label mine    # the whole benchmark, 3 tries per task
 uv run python -m agent "your task" --cwd path/to/a/project
 uv run python -m bench.run --tasks t11 --window 32000 --brief   # watch it compact
+uv run python -m bench.yesterday --brief                        # yesterday: a session that learns the discount rules
+uv run python -m bench.run --tasks t12 --memory .runs/memory/yesterday --brief   # today: task 12, with what it kept
+uv run python -m agent "your task" --cwd path/to/a/project --memory path/to/a/memory/folder
 ```
 
 The model is Claude Haiku 5.5 with effort `low`, fixed for the whole series: only the harness changes. The loop has
@@ -93,7 +99,10 @@ with every model release: check your provider's pricing page. The guards in `age
 per task that shares one folder with your computer, the project, and has no network. Everything else in it is
 read-only except its own `/tmp`; it gets none of your environment variables; a command stops after 60 seconds, with
 everything it started. The file and search tools run on your computer and refuse paths outside the project folder
-and `.env` files. Long outputs are saved inside the project, in `.outputs/`, where both sides can read them. Without
+and `.env` files. Long outputs are saved inside the project, in `.outputs/`, where both sides can read them. From
+episode 6 on, the file tools may also read and write the agent's memory folder (`--memory`; the benchmark's is
+`memory/` in its work folder), the one place outside the project they reach; the shell can't see it. What the agent
+saves there goes into the first message of every later session, so read it now and then: it is plain Markdown. Without
 Docker, `python -m agent` asks you before every command, and the benchmark doesn't run.
 
 What the sandbox doesn't cover:
