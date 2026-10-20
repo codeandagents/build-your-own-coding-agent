@@ -55,7 +55,8 @@ def test_the_first_message_has_the_instructions_and_the_index_then_the_task(proj
     context, task = first["content"]
     assert task == {"type": "text", "text": "Add the discount."}
     assert context["text"].startswith("<context>\nProject instructions, from AGENTS.md:\n# Notes for coding agents")
-    assert f"Your memory's index, from {(notes / 'MEMORY.md').as_posix()}:\n- [Discount rules]" in context["text"]
+    assert f"Your memory's index, from {memory.where(notes)}/MEMORY.md:\n- [Discount rules]" in context["text"]
+    assert memory.where(notes).startswith("/")  # the path the sandbox mounts it at (C:\... is /c/...)
     assert "Right after the consults" not in context["text"]  # a memory's own file is read when it's needed
 
 
@@ -104,6 +105,7 @@ def test_the_file_tools_use_the_memory_folder_only_while_a_session_runs(project,
     with tools.also(notes):
         output, error = run_tool("read_file", {"path": path}, project)
         assert not error and "[Discount rules]" in output
+        assert run_tool("read_file", {"path": memory.where(notes) + "/MEMORY.md"}, project) == (output, False)
         assert not run_tool("write_file", {"path": (notes / "new.md").as_posix(), "content": "hi"}, project)[1]
         found, _ = run_tool("find_files", {"pattern": "*.md", "path": notes.as_posix()}, project)
         assert found.split("\n") == [(notes / name).as_posix() for name in ("MEMORY.md", "discounts.md", "new.md")]
@@ -112,10 +114,13 @@ def test_the_file_tools_use_the_memory_folder_only_while_a_session_runs(project,
 
 
 def test_the_system_prompt_names_the_memory_folder_only_when_there_is_one(notes):
-    assert loop.request([])["system"] == loop.SYSTEM
-    with_memory = loop.request([], memory=notes)["system"]
-    assert with_memory.startswith(loop.SYSTEM) and notes.resolve().as_posix() in with_memory
-    assert "type: user, feedback, project or reference" in with_memory
+    plain = loop.request([])
+    assert plain["system"] == loop.SYSTEM and plain["tools"] == tools.TOOLS  # episode 5's request, unchanged
+    with_memory = loop.request([], memory=notes)
+    assert with_memory["system"].startswith(loop.SYSTEM) and memory.where(notes) in with_memory["system"]
+    assert "type: user, feedback, project or reference" in with_memory["system"]
+    assert with_memory["tools"][0]["description"].endswith(tools.WITH_MEMORY)  # bash: the sandbox shares it, read-only
+    assert with_memory["tools"][1:] == tools.TOOLS[1:]
 
 
 def test_the_loop_sends_the_users_reply_when_the_agent_stops(project, notes, monkeypatch):
@@ -128,7 +133,7 @@ def test_the_loop_sends_the_users_reply_when_the_agent_stops(project, notes, mon
     assert conversation[2] == {"role": "user", "content": "Review: put it after the consults."}
     assert "user: Review: put it after the consults." in log
     assert log[:2] == [f"[project instructions: AGENTS.md, {len(RULES)} characters]",
-                       f"[memory: {(notes / 'MEMORY.md').as_posix()}, 1 line]"]
+                       f"[memory: {memory.where(notes)}/MEMORY.md, 1 line]"]
 
 
 def test_the_loop_adds_the_subfolders_instructions_to_the_first_read_there(project, monkeypatch):

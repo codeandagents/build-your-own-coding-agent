@@ -31,14 +31,18 @@ def inside(folder: Path) -> str:
 
 
 class Sandbox:
-    """One container per task; each command runs in it in a fresh bash (docker exec)."""
+    """One container per task; each command runs in it in a fresh bash (docker exec).
+    memory (episode 6): the agent's memory folder, shared read-only, as Claude Code's sandboxed shell can read its
+    memory but not write it (the file tools write it)."""
 
-    def __init__(self, folder: Path):
+    def __init__(self, folder: Path, memory: Path | None = None):
         self.name, self.workdir = f"byoca-{uuid.uuid4().hex[:8]}", inside(folder)
+        shared = ["--volume", f"{memory.resolve()}:{inside(memory)}:ro"] if memory else []
         docker("run", "--detach", "--rm", "--name", self.name,
                "--network", "none",                                # no network at all
                "--read-only", "--tmpfs", "/tmp:exec,mode=1777",    # nothing is writable but the project and /tmp
                "--volume", f"{folder.resolve()}:{self.workdir}",   # the one folder it shares with this machine
+               *shared,                                            # and the memory, to read only
                "--workdir", self.workdir, "--env", f"HOME={self.workdir}",
                "--user", user(), "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
                "--pids-limit", "512", "--memory", "2g",            # a runaway command can't take the machine down

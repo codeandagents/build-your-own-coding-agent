@@ -5,12 +5,15 @@ persistent context" and "Auto memory: notes Claude writes itself based on your c
 1. Project instructions: the project's CLAUDE.md files, or its AGENTS.md when it has none, go into the first message
    of every session. A subfolder's file joins the conversation the first time the agent reads a file in that folder.
 2. Auto memory: a folder outside the project. Its index, MEMORY.md (the first 200 lines or 25KB), goes into the first
-   message too; each memory is a file of its own, read with read_file when the agent needs it. The agent writes them
-   with write_file and edit_file, and the system prompt says when: the one place outside the project the file tools
-   may use. The shell can't reach it (the sandbox shares only the project).
+   message too; each memory is a file of its own, read when the agent needs it. The agent writes them with write_file
+   and edit_file, and the system prompt says when: the one place outside the project the file tools may use. The
+   sandbox shares the folder with the shell to read only, as Claude Code's sandboxed shell can read its memory but not
+   write it.
 
 Both are context, not rules: the model reads them, and decides."""
 from pathlib import Path
+
+from .sandbox import inside
 
 INDEX = "MEMORY.md"
 INDEX_LINES, INDEX_BYTES = 200, 25 * 1024  # what of MEMORY.md is loaded: "the first 200 lines ... or the first 25KB"
@@ -28,8 +31,8 @@ Save a memory when the user corrects you or confirms an approach, or tells you s
 couldn't learn from its code: a decision, a rule kept outside the repository, where to find something. Don't save \
 what the code, its history or its instruction files already say, or what matters only to this session. Write one \
 memory per file, starting with frontmatter (name, description, and type: user, feedback, project or reference), and \
-give it one line in MEMORY.md: - [Title](file.md): what it's about. Use read_file, write_file and edit_file with the \
-folder's full path: the shell can't reach it."""
+give it one line in MEMORY.md: - [Title](file.md): what it's about. Save them with write_file and edit_file, using \
+the folder's full path."""
 
 
 def folder_files(folder: Path) -> list[Path]:
@@ -60,14 +63,19 @@ def name(path: Path, cwd: Path) -> str:
     return path.resolve().relative_to(cwd.resolve()).as_posix()
 
 
+def where(memory: Path) -> str:
+    """The memory folder's path as the agent sees it: the way the sandbox mounts it (C:\\work\\memory is
+    /c/work/memory), which the file tools take too."""
+    return inside(memory)
+
+
 def context(cwd: Path, memory: Path | None) -> str:
     """What a session knows before the task: the project's instructions, and the memory's index."""
     parts = [f"Project instructions, from {name(path, cwd)}:\n{read(path).strip()}" for path in folder_files(cwd)]
     if memory is not None:
-        saved = index(memory)
-        where = (memory / INDEX).as_posix()
-        parts.append(f"Your memory's index, from {where}:\n{saved}" if saved else
-                     f"Your memory's index, {where}, is empty: nothing has been saved yet.")
+        saved, path = index(memory), f"{where(memory)}/{INDEX}"
+        parts.append(f"Your memory's index, from {path}:\n{saved}" if saved else
+                     f"Your memory's index, {path}, is empty: nothing has been saved yet.")
     return "\n\n".join(parts)
 
 
@@ -77,8 +85,8 @@ def report(cwd: Path, memory: Path | None) -> list[str]:
     if memory is not None:
         saved = index(memory)
         count = len(saved.split("\n")) if saved else 0
-        lines.append(f"[memory: {(memory / INDEX).as_posix()}, {count} line{'s' * (count != 1)}]" if saved
-                     else f"[memory: {memory.as_posix()}, empty]")
+        lines.append(f"[memory: {where(memory)}/{INDEX}, {count} line{'s' * (count != 1)}]" if saved
+                     else f"[memory: {where(memory)}, empty]")
     return lines
 
 

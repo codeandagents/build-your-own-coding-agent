@@ -71,6 +71,19 @@ def test_nothing_outside_the_project_is_writable(tmp_path, box):
 
 
 @needs_docker
+def test_the_memory_folder_is_shared_to_read_only(tmp_path):
+    project, memory = tmp_path / "project", tmp_path / "memory"
+    project.mkdir()
+    memory.mkdir()
+    (memory / "MEMORY.md").write_text("- [Rules](rules.md): discounts\n", encoding="utf-8")
+    with Sandbox(project, memory) as box:
+        assert box.run(f"cat {inside(memory)}/MEMORY.md", timeout=30) == (0, "- [Rules](rules.md): discounts\n")
+        code, output = box.run(f"echo changed > {inside(memory)}/MEMORY.md", timeout=30)
+        assert code and "Read-only file system" in output
+    assert (memory / "MEMORY.md").read_text(encoding="utf-8") == "- [Rules](rules.md): discounts\n"
+
+
+@needs_docker
 def test_tmp_is_writable_and_lasts_the_task(box):
     box.run("echo scratch > /tmp/check.txt", timeout=30)
     assert box.run("cat /tmp/check.txt", timeout=30) == (0, "scratch\n")

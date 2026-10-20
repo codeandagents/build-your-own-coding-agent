@@ -27,7 +27,7 @@ def main() -> int:
     missing = sandbox.available()
     if missing:
         print(f"No sandbox ({missing}): you'll be asked before each command runs.")
-    with nullcontext() if missing else sandbox.Sandbox(cwd) as box:
+    with nullcontext() if missing else sandbox.Sandbox(cwd, args.memory) as box:
         result = run(args.task, claude, cwd, box=box, window=args.window, mode=args.compact, memory=args.memory)
     print(f"[{result.stop} after {result.turns} turns]")
     return 0 if result.stop == "done" else 1

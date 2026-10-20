@@ -170,7 +170,7 @@ def main() -> int:
                 before = len(claude.ledger.entries())  # this try's requests only, not the task's earlier tries
                 memory = start_memory(args.memory, r)
                 remembered = mem.snapshot(memory) if memory else {}
-                with Sandbox(folder) as box:
+                with Sandbox(folder, memory) as box:
                     result = loop.run(task.prompt, claude, folder, label=task.id, log=brief if args.brief else print,
                                       box=box, window=args.window, mode=args.compact, memory=memory)
                 passed, summary = score(task, folder)

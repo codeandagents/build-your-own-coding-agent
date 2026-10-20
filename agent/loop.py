@@ -33,12 +33,13 @@ class Result:
 
 def system(memory: Path | None) -> str:
     """The system prompt; with a memory folder, it says where the folder is and when to save to it."""
-    return SYSTEM if memory is None else SYSTEM + "\n" + mem.PROMPT.format(folder=memory.resolve().as_posix())
+    return SYSTEM if memory is None else SYSTEM + "\n" + mem.PROMPT.format(folder=mem.where(memory))
 
 
 def request(messages: list, sandboxed: bool = True, memory: Path | None = None) -> dict:
-    """One turn's request. cache_control: the API caches the prompt so far; the next turn reads it at 1/10 price."""
-    tools = TOOLS if sandboxed else [bash_tool(sandboxed=False), *TOOLS[1:]]
+    """One turn's request. cache_control: the API caches the prompt so far; the next turn reads it at 1/10 price.
+    With a memory folder, bash's description says the sandbox shares it, to read only."""
+    tools = [bash_tool(sandboxed, memory is not None), *TOOLS[1:]]
     return dict(system=system(memory), tools=tools, messages=messages, max_tokens=8000,
                 cache_control={"type": "ephemeral"}, output_config={"effort": "low"})
 

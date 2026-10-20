@@ -61,7 +61,7 @@ def main() -> int:
             claude = Claude(run=run_id, salt=f"r{r}", run_budget_usd=args.run_budget)
             print(f"\n=== {task.id} (repeat {r + 1}) in {folder}")
             before = len(claude.ledger.entries())
-            with Sandbox(folder) as box:
+            with Sandbox(folder, memory) as box:
                 result = loop.run(task.prompt, claude, folder, label=task.id, log=brief if args.brief else print,
                                   box=box, memory=memory, replies=(review,))
             passed, summary = score(task, folder)

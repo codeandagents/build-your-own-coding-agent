@@ -36,10 +36,13 @@ BASH = ("Run a shell command in the project directory and get its output (stdout
 WHERE = {True: (" Commands run in a sandbox: a Linux container with no network that shares only the project folder "
                 "with the user's machine (its /tmp is its own)."),
          False: " There is no sandbox: the user approves each command before it runs."}
+WITH_MEMORY = (" Commands run in a sandbox: a Linux container with no network that shares the project folder with the "
+               "user's machine, and your memory folder to read only (its /tmp is its own).")  # episode 6
 
 
-def bash_tool(sandboxed: bool = True) -> dict:
-    return {"name": "bash", "description": BASH + WHERE[sandboxed],
+def bash_tool(sandboxed: bool = True, memory: bool = False) -> dict:
+    where = WITH_MEMORY if sandboxed and memory else WHERE[sandboxed]
+    return {"name": "bash", "description": BASH + where,
             "input_schema": schema({"command": {"type": "string", "description": "The command to run."}})}
 
 
