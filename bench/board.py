@@ -9,7 +9,7 @@ from pathlib import Path
 
 from agent.llm import RUNS
 
-SMOKE = 5  # t01-t05 are the cheap smoke set; t06-t15 the hard ten
+SMOKE = ("t01", "t02", "t03", "t04", "t05")  # the cheap smoke set; t06-t15 are the hard ten
 
 
 def rows_of(arg: str) -> list[dict]:
@@ -37,11 +37,12 @@ def main() -> int:
         print(f"{task:22}" + "".join(f"{cells.get(i, '-'):>7}" for i in range(tries)) + f"{turns:>7.1f}"
               f"{'$%.4f' % cost:>9}")
     passed = sum(r["passed"] for r in rows)
-    smoke = [r for r in rows if r["task"] in tasks[:SMOKE]]
-    hard = [r for r in rows if r["task"] in tasks[SMOKE:]]
+    smoke = [r for r in rows if r["task"].startswith(SMOKE)]
+    hard = [r for r in rows if r["task"][:1] == "t" and r["task"][1:3].isdigit() and r not in smoke]
+    split = (f": smoke {sum(r['passed'] for r in smoke)}/{len(smoke)}, hard {sum(r['passed'] for r in hard)}/{len(hard)}"
+             if smoke and hard else "")  # a board of a few tasks (or of yesterday's sessions) has no split
     days = sorted({r["run"].rsplit("-", 2)[-2] for r in rows})
-    print(f"Score {passed}/{len(rows)} ({passed / len(rows):.0%}): smoke {sum(r['passed'] for r in smoke)}/{len(smoke)}, "
-          f"hard {sum(r['passed'] for r in hard)}/{len(hard)}. ${sum(r['usd'] for r in rows):.4f}, "
+    print(f"Score {passed}/{len(rows)} ({passed / len(rows):.0%}){split}. ${sum(r['usd'] for r in rows):.4f}, "
           + ", ".join(f"{d[:4]}-{d[4:6]}-{d[6:]}" for d in days) + ".")
     return 0
 
