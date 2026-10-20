@@ -1,0 +1,1 @@
+- [Clinic discount rules for invoices](clinic-discount-rules.md): how every clinic-added discount must appear on invoices (accountant's monthly check)

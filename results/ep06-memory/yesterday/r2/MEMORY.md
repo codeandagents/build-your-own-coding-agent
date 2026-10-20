@@ -1,0 +1,1 @@
+- [Clinic discount rules](discount-rules.md): how every discount line must look on invoices (accountant checks them)

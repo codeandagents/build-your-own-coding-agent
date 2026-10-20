@@ -15,7 +15,7 @@ Not affiliated with Anthropic. "Claude Code" describes the kind of tool built he
 | [`ep03`](../../tree/ep03) | 3. The context budget | Claude Code's limits on how much of a tool's output reaches the model, and how it gets the rest: a result over 30,000 characters is saved to a file in the project's `.outputs/` folder (the model gets its path and the first 2,000 characters), a failed command keeps its first and last 5,000 characters, `read_file` reads up to 40,000 characters a call and returns a longer file as pages with a "PARTIAL view" notice, and `search_files` pages on with `offset` |
 | [`ep04`](../../tree/ep04) | 4. A sandbox | the shell runs in a Docker container per task, with no network and one folder shared with your machine: the project; without Docker, every command waits for your yes. It replaces episodes 1-3's list of blocked patterns (`bench.escape` compares the two) |
 | [`ep05`](../../tree/ep05) | 5. Compaction | when the conversation no longer fits the context window, Claude Code's two steps: old tool outputs (all but the newest three) become one-line notes, then, if that isn't enough, the model summarizes its work under the six headings Claude Code's docs list and the conversation starts again from the task, the summary and the files it touched last; a guard stops a task whose window fills up again after every summary. `--window` and `--compact none\|clear\|full` set the window and the steps (the benchmark runs at 32,000 tokens) |
-| [`ep06`](../../tree/ep06) | 6. Memory | what a session starts with, Claude Code's two kinds: the instructions you write (the project's `CLAUDE.md`, or its `AGENTS.md` when it has none) and the notes the agent writes itself, in a memory folder outside the project. Both go into the first message (the memory as its index, `MEMORY.md`: the first 200 lines or 25KB); a subfolder's instructions come with the first file read there, and each memory's own file is read when the agent needs it. The agent saves memories with its file tools when the user corrects it or tells it something the code can't show. `bench.yesterday` runs a session that learns something (code review sends a discount back with the clinic's rules); `bench.run --memory` starts each task from what that session kept. Back at the 64,000-token window |
+| [`ep06`](../../tree/ep06) | 6. Memory | what a session starts with, Claude Code's two kinds: the instructions you write (the project's `CLAUDE.md`, or its `AGENTS.md` when it has none) and the notes the agent writes itself, in a memory folder outside the project. Both go into the first message (the memory as its index, `MEMORY.md`: the first 200 lines or 25KB); a subfolder's instructions come with the first file read there, and each memory's own file is read when the agent needs it. The agent saves memories with its file tools when the user corrects it or tells it something the code can't show; the sandbox shares the folder with the shell to read only, as Claude Code's sandboxed shell can read its memory but not write it. `bench.yesterday` runs a session that learns something (code review sends a discount back with the clinic's rules); `bench.run --memory` starts each task from what that session kept. Back at the 64,000-token window. Its step: [`ep06-blind`](../../tree/ep06-blind) (the shell couldn't see the memory folder) |
 
 Each episode's follow-along notes (every command the video runs, and what to look for) are in
 [`docs/follow-along/`](docs/follow-along/): [episode 1](docs/follow-along/ep01.md),
@@ -42,7 +42,11 @@ results/            the scoreboards the videos show (ep01.jsonl = the episode-1 
                     ep02-steer.jsonl, ep02-search-lines.jsonl and ep02.jsonl = episode 2's steps, the last one
                     its final harness; the -r4-6 files add tries 4-6 to three of them; ep03.jsonl = episode 3;
                     ep04.jsonl = episode 4; ep05-none.jsonl, ep05-clear.jsonl and ep05.jsonl = episode 5's three runs
-                    at a 32,000-token window: no compaction, clearing only, clearing + summary)
+                    at a 32,000-token window: no compaction, clearing only, clearing + summary; ep06-yesterday.jsonl =
+                    episode 6's three sessions that learned the discount rules, ep06-blind.jsonl and ep06.jsonl = the
+                    benchmark on what they saved, before and after the shell could read it, ep06-control*.jsonl = the
+                    same sessions when code review didn't ask it to remember, and task 12 on what they saved;
+                    ep06-memory/ = the notes the agent wrote)
 bench/escape.py     commands agents ran that reached past their folder: what the old rails did with them, and the
                     sandbox
 ```
@@ -83,9 +87,10 @@ the same shape on any provider whose API has tool calling; this code talks to An
 
 ## What it costs
 
-On 2026-10-19, the whole benchmark (15 tasks, 3 tries) cost $0.27 with episode 5's harness at a 32,000-token window,
-about $0.006 a try (202 of its 461 requests were replayed free from earlier runs' recordings). Prices change
-with every model release: check your provider's pricing page. The guards in `agent/llm.py`:
+On 2026-10-20, the whole benchmark (15 tasks, 3 tries) cost $0.33 with episode 6's harness, about $0.007 a try, all
+of it live (episode 5's, at a 32,000-token window: $0.27, with 202 of its 461 requests replayed free from earlier
+runs' recordings). A `bench.yesterday` session costs about a cent. Prices change with every model release: check
+your provider's pricing page. The guards in `agent/llm.py`:
 - a total budget (`budget_usd` in `.runs/config.json`, default $5) and a cap per run (`--run-budget`, default $0.50),
   both checked before every request;
 - a ledger of every request's tokens and cost, `.runs/ledger.jsonl`;
@@ -101,8 +106,9 @@ read-only except its own `/tmp`; it gets none of your environment variables; a c
 everything it started. The file and search tools run on your computer and refuse paths outside the project folder
 and `.env` files. Long outputs are saved inside the project, in `.outputs/`, where both sides can read them. From
 episode 6 on, the file tools may also read and write the agent's memory folder (`--memory`; the benchmark's is
-`memory/` in its work folder), the one place outside the project they reach; the shell can't see it. What the agent
-saves there goes into the first message of every later session, so read it now and then: it is plain Markdown. Without
+`memory/` in its work folder), the one place outside the project they reach; the sandbox shares it with the shell to
+read only. What the agent saves there goes into the first message of every later session, so read it now and then:
+it is plain Markdown, and a note can go stale (two of ours point at a helper that only yesterday's code had). Without
 Docker, `python -m agent` asks you before every command, and the benchmark doesn't run.
 
 What the sandbox doesn't cover:

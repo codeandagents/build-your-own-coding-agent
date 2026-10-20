@@ -1,0 +1,1 @@
+- [Clinic discount line rules](clinic-discount-rules.md): how own discounts appear on invoices; accountant checks monthly

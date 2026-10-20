@@ -1,0 +1,1 @@
+- [Clinic discount rules](discount-rules.md): how every clinic discount must appear on an invoice (own line, name (%), consult lines only, after the consultation)
