@@ -20,7 +20,7 @@ Not affiliated with Anthropic. "Claude Code" describes the kind of tool built he
 Each episode's follow-along notes (every command the video runs, and what to look for) are in
 [`docs/follow-along/`](docs/follow-along/): [episode 1](docs/follow-along/ep01.md),
 [episode 2](docs/follow-along/ep02.md), [episode 3](docs/follow-along/ep03.md), [episode 4](docs/follow-along/ep04.md),
-[episode 5](docs/follow-along/ep05.md).
+[episode 5](docs/follow-along/ep05.md), [episode 6](docs/follow-along/ep06.md).
 
 ## What's in it
 
